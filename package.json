@@ -1,6 +1,23 @@
 {
   "name": "@leynier/ccst",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "description": "Claude Code Switch Tools for managing contexts",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "cli",
+    "contexts",
+    "config",
+    "switcher"
+  ],
+  "homepage": "https://github.com/leynier/ccst",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/leynier/ccst.git"
+  },
+  "bugs": {
+    "url": "https://github.com/leynier/ccst/issues"
+  },
   "module": "index.ts",
   "type": "module",
   "bin": {
@@ -22,6 +39,17 @@
   "peerDependencies": {
     "typescript": "^5"
   },
+  "files": [
+    "src",
+    "index.ts",
+    "readme.md",
+    "LICENSE",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    "biome.json",
+    "tsconfig.json"
+  ],
   "publishConfig": {
     "access": "public"
   }
