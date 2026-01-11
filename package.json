@@ -1,58 +1,59 @@
 {
-  "name": "@leynier/ccst",
-  "version": "0.2.1",
-  "description": "Claude Code Switch Tools for managing contexts",
-  "keywords": [
-    "claude",
-    "claude-code",
-    "cli",
-    "contexts",
-    "config",
-    "switcher"
-  ],
-  "homepage": "https://github.com/leynier/ccst",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/leynier/ccst.git"
-  },
-  "bugs": {
-    "url": "https://github.com/leynier/ccst/issues"
-  },
-  "license": "MIT",
-  "readme": "README.md",
-  "module": "index.ts",
-  "type": "module",
-  "bin": {
-    "ccst": "./src/index.ts"
-  },
-  "scripts": {
-    "format": "biome format --write",
-    "lint": "biome check --write",
-    "validate": "bun run format && bun run lint"
-  },
-  "dependencies": {
-    "commander": "^12.1.0",
-    "picocolors": "^1.1.0"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.3.11",
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "files": [
-    "src",
-    "index.ts",
-    "README.md",
-    "LICENSE",
-    "AGENTS.md",
-    "CLAUDE.md",
-    "GEMINI.md",
-    "biome.json",
-    "tsconfig.json"
-  ],
-  "publishConfig": {
-    "access": "public"
-  }
+	"name": "@leynier/ccst",
+	"version": "0.3.0",
+	"description": "Claude Code Switch Tools for managing contexts",
+	"keywords": [
+		"claude",
+		"claude-code",
+		"cli",
+		"contexts",
+		"config",
+		"switcher"
+	],
+	"homepage": "https://github.com/leynier/ccst",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/leynier/ccst.git"
+	},
+	"bugs": {
+		"url": "https://github.com/leynier/ccst/issues"
+	},
+	"license": "MIT",
+	"readme": "README.md",
+	"module": "index.ts",
+	"type": "module",
+	"bin": {
+		"ccst": "./src/index.ts"
+	},
+	"scripts": {
+		"format": "biome format --write",
+		"lint": "biome check --write",
+		"validate": "bun run format && bun run lint"
+	},
+	"dependencies": {
+		"commander": "^12.1.0",
+		"jszip": "^3.10.1",
+		"picocolors": "^1.1.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.3.11",
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"files": [
+		"src",
+		"index.ts",
+		"README.md",
+		"LICENSE",
+		"AGENTS.md",
+		"CLAUDE.md",
+		"GEMINI.md",
+		"biome.json",
+		"tsconfig.json"
+	],
+	"publishConfig": {
+		"access": "public"
+	}
 }
