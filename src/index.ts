@@ -1,3 +1,4 @@
+#!/usr/bin/env bun
 import { Command } from "commander";
 import { getPaths } from "./utils/paths.js";
 import { ContextManager } from "./core/context-manager.js";
