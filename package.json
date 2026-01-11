@@ -1,6 +1,6 @@
 {
   "name": "@leynier/ccst",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Claude Code Switch Tools for managing contexts",
   "keywords": [
     "claude",
@@ -19,6 +19,7 @@
     "url": "https://github.com/leynier/ccst/issues"
   },
   "license": "MIT",
+  "readme": "README.md",
   "module": "index.ts",
   "type": "module",
   "bin": {
