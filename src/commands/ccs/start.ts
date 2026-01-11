@@ -47,12 +47,18 @@ export const ccsStartCommand = async (
 	// Open log file for writing (append mode)
 	const logFd = openSync(logPath, "a");
 	// Spawn detached process
-	const child = spawn(ccsPath, ["config"], {
-		detached: true,
-		stdio: ["ignore", logFd, logFd],
-		// On Windows, need shell: true for proper detachment and windowsHide to hide console
-		...(process.platform === "win32" ? { shell: true, windowsHide: true } : {}),
-	});
+	// On Windows, use "start /B" to run without a visible console window
+	const child =
+		process.platform === "win32"
+			? spawn("cmd", ["/c", "start", "/B", ccsPath, "config"], {
+					detached: true,
+					stdio: ["ignore", logFd, logFd],
+					windowsHide: true,
+				})
+			: spawn(ccsPath, ["config"], {
+					detached: true,
+					stdio: ["ignore", logFd, logFd],
+				});
 	if (!child.pid) {
 		console.log(pc.red("Failed to start CCS config daemon"));
 		return;
