@@ -55,6 +55,7 @@ export const importFromConfigs = async (manager: ContextManager, configsDir?: st
   for (const fileName of entries) {
     const configPath = path.join(dir, fileName);
     const profileName = path.basename(fileName, ".json");
+    console.log(`  📦 Importing '${colors.cyan(profileName)}'...`);
     const config = await readJson<Record<string, unknown>>(configPath);
     const merged = fileName === "default.json" ? config : deepMerge(defaultConfig, config);
     if (currentContext && currentContext === profileName) {

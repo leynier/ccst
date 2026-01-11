@@ -72,6 +72,7 @@ export const importFromCcs = async (manager: ContextManager, configsDir?: string
   for (const fileName of entries) {
     const settingsPath = path.join(ccsPath, fileName);
     const profileName = fileName.replace(/\.settings\.json$/u, "");
+    console.log(`  📦 Importing '${colors.cyan(profileName)}'...`);
     const settings = await readJson<Record<string, unknown>>(settingsPath);
     const merged = deepMerge(defaultConfig, settings);
     if (currentContext && currentContext === profileName) {
