@@ -7,6 +7,7 @@ import {
 	getLogPath,
 	getRunningDaemonPid,
 	isProcessRunning,
+	killProcessTree,
 	writePid,
 } from "../../utils/daemon.js";
 
@@ -29,19 +30,15 @@ export const ccsStartCommand = async (
 	// If force and running, stop first
 	if (existingPid !== null && options?.force) {
 		console.log(pc.dim(`Stopping existing daemon (PID: ${existingPid})...`));
-		try {
-			process.kill(existingPid, "SIGTERM");
-			// Wait for process to terminate
-			const maxWait = 3000;
-			const startTime = Date.now();
-			while (Date.now() - startTime < maxWait) {
-				if (!isProcessRunning(existingPid)) {
-					break;
-				}
-				await new Promise((resolve) => setTimeout(resolve, 100));
+		await killProcessTree(existingPid, true);
+		// Wait for process to terminate
+		const maxWait = 3000;
+		const startTime = Date.now();
+		while (Date.now() - startTime < maxWait) {
+			if (!isProcessRunning(existingPid)) {
+				break;
 			}
-		} catch {
-			// Process may have already exited
+			await new Promise((resolve) => setTimeout(resolve, 100));
 		}
 	}
 	ensureDaemonDir();
@@ -53,8 +50,8 @@ export const ccsStartCommand = async (
 	const child = spawn(ccsPath, ["config"], {
 		detached: true,
 		stdio: ["ignore", logFd, logFd],
-		// On Windows, need shell: true for proper detachment
-		...(process.platform === "win32" ? { shell: true } : {}),
+		// On Windows, need shell: true for proper detachment and windowsHide to hide console
+		...(process.platform === "win32" ? { shell: true, windowsHide: true } : {}),
 	});
 	if (!child.pid) {
 		console.log(pc.red("Failed to start CCS config daemon"));

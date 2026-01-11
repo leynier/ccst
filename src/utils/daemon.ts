@@ -81,3 +81,73 @@ export const getCcsExecutable = (): string => {
 	// Use 'ccs' from PATH - it should be globally installed
 	return "ccs";
 };
+
+// Known CCS daemon ports
+export const CCS_PORTS = [3000, 8317];
+
+// Kill process tree (on Windows, kills all child processes)
+export const killProcessTree = async (
+	pid: number,
+	force?: boolean,
+): Promise<boolean> => {
+	if (process.platform === "win32") {
+		const args = ["/PID", String(pid), "/T"];
+		if (force) args.push("/F");
+		const proc = Bun.spawn(["taskkill", ...args], {
+			stdout: "ignore",
+			stderr: "ignore",
+		});
+		await proc.exited;
+		return proc.exitCode === 0;
+	}
+	const signal = force ? "SIGKILL" : "SIGTERM";
+	try {
+		process.kill(pid, signal);
+		return true;
+	} catch {
+		return false;
+	}
+};
+
+// Get PID of process listening on a port
+export const getProcessByPort = async (
+	port: number,
+): Promise<number | null> => {
+	if (process.platform === "win32") {
+		const proc = Bun.spawn(["cmd", "/c", `netstat -ano | findstr :${port}`], {
+			stdout: "pipe",
+			stderr: "ignore",
+		});
+		const output = await new Response(proc.stdout).text();
+		await proc.exited;
+		const lines = output.trim().split("\n");
+		for (const line of lines) {
+			if (line.includes("LISTENING") || line.includes("ESTABLISHED")) {
+				const parts = line.trim().split(/\s+/);
+				const pid = Number.parseInt(parts[parts.length - 1], 10);
+				if (Number.isFinite(pid) && pid > 0) {
+					return pid;
+				}
+			}
+		}
+		return null;
+	}
+	const proc = Bun.spawn(["lsof", "-ti", `:${port}`], {
+		stdout: "pipe",
+		stderr: "ignore",
+	});
+	const output = await new Response(proc.stdout).text();
+	await proc.exited;
+	const pid = Number.parseInt(output.trim(), 10);
+	return Number.isFinite(pid) ? pid : null;
+};
+
+// Kill process by port
+export const killProcessByPort = async (
+	port: number,
+	force?: boolean,
+): Promise<boolean> => {
+	const pid = await getProcessByPort(port);
+	if (pid === null) return false;
+	return killProcessTree(pid, force);
+};

@@ -1,6 +1,6 @@
 {
 	"name": "@leynier/ccst",
-	"version": "0.4.0",
+	"version": "0.5.0",
 	"description": "Claude Code Switch Tools for managing contexts",
 	"keywords": [
 		"claude",
