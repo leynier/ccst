@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { Command } from "commander";
+import pkg from "../package.json";
 import { completionsCommand } from "./commands/completions.js";
 import { configDumpCommand } from "./commands/config/dump.js";
 import { configLoadCommand } from "./commands/config/load.js";
@@ -30,6 +31,7 @@ const main = async (): Promise<void> => {
 	program
 		.name("ccst")
 		.description("Claude Code Switch Tools")
+		.version(pkg.version)
 		.argument("[context]", "context name")
 		.option("-d, --delete", "delete context")
 		.option("-c, --current", "print current context")
