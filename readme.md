@@ -20,20 +20,20 @@
 Install globally with npm (default):
 
 ```bash
-npm install -g ccst
+npm install -g @leynier/ccst
 ```
 
 Alternative package managers:
 
 ```bash
 # bun
-bun add -g ccst
+bun add -g @leynier/ccst
 
 # pnpm
-pnpm add -g ccst
+pnpm add -g @leynier/ccst
 
 # yarn
-yarn global add ccst
+yarn global add @leynier/ccst
 ```
 
 ### 30-Second Setup
