@@ -140,9 +140,13 @@ export const formatHistory = (contextName: string, history: MergeHistory): strin
     return `No merge history for ${contextName}`;
   }
   const lines: string[] = [];
-  lines.push(`Merge history for ${contextName}:`);
-  history.forEach((entry, index) => {
-    lines.push(`  ${index + 1}. ${entry.source} (${entry.mergedItems.length} items) at ${entry.timestamp}`);
-  });
+  lines.push(`📋 Merge history for context '${contextName}':`);
+  lines.push("");
+  for (const entry of history) {
+    lines.push(`  📅 ${entry.timestamp}`);
+    lines.push(`  📁 Source: ${entry.source}`);
+    lines.push(`  📝 Merged ${entry.mergedItems.length} items`);
+    lines.push("");
+  }
   return lines.join("\n");
 };

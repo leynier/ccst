@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, readdirSync } from "node:fs";
 import type { ContextManager } from "../../core/context-manager.js";
 import { deepMerge } from "../../utils/deep-merge.js";
 import { readJson, readJsonIfExists } from "../../utils/json.js";
+import { colors } from "../../utils/colors.js";
 
 const defaultConfigsDir = (): string => path.join(homedir(), ".ccst");
 
@@ -39,6 +40,7 @@ const importProfile = async (manager: ContextManager, profileName: string, merge
 
 export const importFromConfigs = async (manager: ContextManager, configsDir?: string): Promise<void> => {
   const dir = configsDir ?? defaultConfigsDir();
+  console.log(`📥 Importing profiles from configs directory...`);
   const created = await ensureDefaultConfig(manager, dir);
   const defaultConfig = await loadDefaultConfig(dir);
   const defaultProfile = await readJsonIfExists<Record<string, unknown>>(path.join(dir, "default.json"), defaultConfig);
@@ -49,6 +51,7 @@ export const importFromConfigs = async (manager: ContextManager, configsDir?: st
   } catch {
     entries = [];
   }
+  let importedCount = 0;
   for (const fileName of entries) {
     const configPath = path.join(dir, fileName);
     const profileName = path.basename(fileName, ".json");
@@ -58,6 +61,7 @@ export const importFromConfigs = async (manager: ContextManager, configsDir?: st
       await manager.unsetContext();
     }
     await importProfile(manager, profileName, merged);
+    importedCount++;
   }
   if (created) {
     await importProfile(manager, "default", defaultProfile);
@@ -65,4 +69,5 @@ export const importFromConfigs = async (manager: ContextManager, configsDir?: st
   if (currentContext) {
     await manager.switchContext(currentContext);
   }
+  console.log(`✅ Imported ${colors.bold(colors.green(String(importedCount)))} profiles from configs`);
 };

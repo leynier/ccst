@@ -202,19 +202,19 @@ export class ContextManager {
     }
     if (this.settingsLevel === "user") {
       if (hasProjectContexts()) {
-        console.log(`Project contexts available: run 'ccst --in-project' to manage`);
+        console.log(`💡 Project contexts available: run 'ccst --in-project' to manage`);
       }
       if (hasLocalContexts()) {
-        console.log(`Local contexts available: run 'ccst --local' to manage`);
+        console.log(`💡 Local contexts available: run 'ccst --local' to manage`);
       }
     }
     if (contexts.length === 0) {
-      const label = this.settingsLevel === "user" ? "User" : this.settingsLevel === "project" ? "Project" : "Local";
+      const label = this.settingsLevel === "user" ? "👤 User" : this.settingsLevel === "project" ? "📁 Project" : "💻 Local";
       console.log(`${label} contexts: No contexts found. Create one with: ccst -n <name>`);
       return;
     }
-    const label = this.settingsLevel === "user" ? "User" : this.settingsLevel === "project" ? "Project" : "Local";
-    console.log(`${label} contexts:`);
+    const label = this.settingsLevel === "user" ? "👤 User" : this.settingsLevel === "project" ? "📁 Project" : "💻 Local";
+    console.log(`${colors.bold(colors.cyan(label))} contexts:`);
     for (const ctx of contexts) {
       if (ctx === current) {
         console.log(`  ${colors.bold(colors.green(ctx))} ${colors.dim("(current)")}`);
@@ -291,7 +291,7 @@ export class ContextManager {
     const entry = mergePermissions(targetJson, sourceJson, source);
     await writeJson(targetPath, targetJson);
     await this.appendHistory(target, entry);
-    console.log(`Merged ${entry.mergedItems.length} permissions from '${source}' into '${target}'`);
+    console.log(`✅ Merged ${entry.mergedItems.length} permissions from '${colors.green(source)}' into '${colors.bold(colors.green(target))}'`);
   }
 
   public async mergeFromFull(target: string, source: string): Promise<void> {
@@ -299,7 +299,7 @@ export class ContextManager {
     const entry = mergeFull(targetJson, sourceJson, source);
     await writeJson(targetPath, targetJson);
     await this.appendHistory(target, entry);
-    console.log(`Full merge completed: ${entry.mergedItems.length} items from '${source}' into '${target}'`);
+    console.log(`✅ Full merge completed: ${entry.mergedItems.length} items from '${colors.green(source)}' into '${colors.bold(colors.green(target))}'`);
   }
 
   public async unmergeFrom(target: string, source: string, mergeFullFlag: boolean): Promise<void> {
@@ -312,7 +312,7 @@ export class ContextManager {
     const nextEntries = unmergePermissions(targetJson, entries, source);
     await writeJson(targetPath, targetJson);
     await saveHistory(this.contextsDir, contextName, nextEntries);
-    console.log(`Removed permissions previously merged from '${source}' in '${target}'`);
+    console.log(`✅ Removed permissions previously merged from '${colors.red(source)}' in '${colors.bold(colors.green(target))}'`);
   }
 
   public async unmergeFromFull(target: string, source: string): Promise<void> {
@@ -321,7 +321,7 @@ export class ContextManager {
     const nextEntries = unmergeFull(targetJson, entries, source);
     await writeJson(targetPath, targetJson);
     await saveHistory(this.contextsDir, contextName, nextEntries);
-    console.log(`Removed all settings previously merged from '${source}' in '${target}'`);
+    console.log(`✅ Removed all settings previously merged from '${colors.red(source)}' in '${colors.bold(colors.green(target))}'`);
   }
 
   public async showMergeHistory(name?: string): Promise<void> {

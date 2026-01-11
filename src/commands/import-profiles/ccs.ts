@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, readdirSync } from "node:fs";
 import type { ContextManager } from "../../core/context-manager.js";
 import { deepMerge } from "../../utils/deep-merge.js";
 import { readJson, readJsonIfExists } from "../../utils/json.js";
+import { colors } from "../../utils/colors.js";
 
 const defaultConfigsDir = (): string => path.join(homedir(), ".ccst");
 const ccsDir = (): string => path.join(homedir(), ".ccs");
@@ -54,6 +55,7 @@ export const importFromCcs = async (manager: ContextManager, configsDir?: string
   if (!existsSync(ccsPath)) {
     throw new Error(`CCS directory not found: ${ccsPath}`);
   }
+  console.log(`📥 Importing profiles from CCS settings...`);
   const dir = configsDir ?? defaultConfigsDir();
   const { created } = await ensureDefaultConfig(manager, dir);
   const defaultConfig = await loadDefaultConfig(dir);
@@ -66,6 +68,7 @@ export const importFromCcs = async (manager: ContextManager, configsDir?: string
   } catch {
     entries = [];
   }
+  let importedCount = 0;
   for (const fileName of entries) {
     const settingsPath = path.join(ccsPath, fileName);
     const profileName = fileName.replace(/\.settings\.json$/u, "");
@@ -75,8 +78,10 @@ export const importFromCcs = async (manager: ContextManager, configsDir?: string
       await manager.unsetContext();
     }
     await importProfile(manager, profileName, merged);
+    importedCount++;
   }
   if (currentContext) {
     await manager.switchContext(currentContext);
   }
+  console.log(`✅ Imported ${colors.bold(colors.green(String(importedCount)))} profiles from CCS`);
 };

@@ -42,7 +42,83 @@ const main = async (): Promise<void> => {
     .option("--unmerge <source>", "remove permissions merged from source")
     .option("--merge-history", "show merge history")
     .option("--merge-full", "merge full settings")
-    .allowExcessArguments(false);
+    .allowExcessArguments(false)
+    .action(async (context: string | undefined, options: Record<string, unknown>) => {
+      if (options.completions) {
+        completionsCommand(options.completions as string);
+        return;
+      }
+      const level = resolveSettingsLevel(options);
+      const manager = new ContextManager(getPaths(level));
+      if (options.current) {
+        const current = await manager.getCurrentContext();
+        if (current) {
+          console.log(current);
+        }
+        return;
+      }
+      if (options.unset) {
+        await unsetCommand(manager);
+        return;
+      }
+      if (options.delete) {
+        await deleteCommand(manager, context);
+        return;
+      }
+      if (options.rename) {
+        await renameCommand(manager, context);
+        return;
+      }
+      if (options.new) {
+        if (!context) {
+          await manager.interactiveCreateContext();
+          return;
+        }
+        await createCommand(manager, context);
+        return;
+      }
+      if (options.edit) {
+        await editCommand(manager, context);
+        return;
+      }
+      if (options.show) {
+        await showCommand(manager, context);
+        return;
+      }
+      if (options.export) {
+        await exportCommand(manager, context);
+        return;
+      }
+      if (options.import) {
+        await importCommand(manager, context);
+        return;
+      }
+      if (options.mergeFrom) {
+        await mergeCommand(manager, options.mergeFrom as string, context, options.mergeFull as boolean);
+        return;
+      }
+      if (options.unmerge) {
+        await unmergeCommand(manager, options.unmerge as string, context, options.mergeFull as boolean);
+        return;
+      }
+      if (options.mergeHistory) {
+        await mergeHistoryCommand(manager, context);
+        return;
+      }
+      if (context === "-") {
+        await switchPreviousCommand(manager);
+        return;
+      }
+      if (context) {
+        await switchCommand(manager, context);
+        return;
+      }
+      if (process.env.CCTX_INTERACTIVE === "1") {
+        await manager.interactiveSelect();
+        return;
+      }
+      await listCommand(manager, options.quiet as boolean);
+    });
   const importCommandGroup = program.command("import").description("import profiles");
   importCommandGroup
     .command("ccs")
@@ -65,85 +141,6 @@ const main = async (): Promise<void> => {
   } catch {
     return;
   }
-  const options = program.opts();
-  const [context] = program.args as [string | undefined];
-  if (context === "import") {
-    return;
-  }
-  if (options.completions) {
-    completionsCommand(options.completions);
-    return;
-  }
-  const level = resolveSettingsLevel(options);
-  const manager = new ContextManager(getPaths(level));
-  if (options.current) {
-    const current = await manager.getCurrentContext();
-    if (current) {
-      console.log(current);
-    }
-    return;
-  }
-  if (options.unset) {
-    await unsetCommand(manager);
-    return;
-  }
-  if (options.delete) {
-    await deleteCommand(manager, context);
-    return;
-  }
-  if (options.rename) {
-    await renameCommand(manager, context);
-    return;
-  }
-  if (options.new) {
-    if (!context) {
-      await manager.interactiveCreateContext();
-      return;
-    }
-    await createCommand(manager, context);
-    return;
-  }
-  if (options.edit) {
-    await editCommand(manager, context);
-    return;
-  }
-  if (options.show) {
-    await showCommand(manager, context);
-    return;
-  }
-  if (options.export) {
-    await exportCommand(manager, context);
-    return;
-  }
-  if (options.import) {
-    await importCommand(manager, context);
-    return;
-  }
-  if (options.mergeFrom) {
-    await mergeCommand(manager, options.mergeFrom, context, options.mergeFull);
-    return;
-  }
-  if (options.unmerge) {
-    await unmergeCommand(manager, options.unmerge, context, options.mergeFull);
-    return;
-  }
-  if (options.mergeHistory) {
-    await mergeHistoryCommand(manager, context);
-    return;
-  }
-  if (context === "-") {
-    await switchPreviousCommand(manager);
-    return;
-  }
-  if (context) {
-    await switchCommand(manager, context);
-    return;
-  }
-  if (process.env.CCTX_INTERACTIVE === "1") {
-    await manager.interactiveSelect();
-    return;
-  }
-  await listCommand(manager, options.quiet);
 };
 
 await main();
