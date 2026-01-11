@@ -7,7 +7,7 @@ export const getCcsHome = (): string => join(homedir(), ".ccs");
 
 // File patterns to backup
 export type CcsBackupFiles = {
-	configYaml: string | null;
+	config: string | null;
 	settingsProfiles: string[];
 	cliproxyAccounts: string | null;
 	cliproxyConfig: string | null;
@@ -27,7 +27,7 @@ const safeReaddirSync = (dirPath: string): string[] => {
 export const getCcsBackupFiles = (): CcsBackupFiles => {
 	const ccsHome = getCcsHome();
 	const result: CcsBackupFiles = {
-		configYaml: null,
+		config: null,
 		settingsProfiles: [],
 		cliproxyAccounts: null,
 		cliproxyConfig: null,
@@ -37,9 +37,9 @@ export const getCcsBackupFiles = (): CcsBackupFiles => {
 		return result;
 	}
 	// config.yaml
-	const configYamlPath = join(ccsHome, "config.yaml");
-	if (existsSync(configYamlPath)) {
-		result.configYaml = configYamlPath;
+	const configPath = join(ccsHome, "config.yaml");
+	if (existsSync(configPath)) {
+		result.config = configPath;
 	}
 	// *.settings.json profiles
 	const rootFiles = safeReaddirSync(ccsHome);
@@ -55,7 +55,7 @@ export const getCcsBackupFiles = (): CcsBackupFiles => {
 		if (existsSync(accountsPath)) {
 			result.cliproxyAccounts = accountsPath;
 		}
-		const configPath = join(cliproxyDir, "config.json");
+		const configPath = join(cliproxyDir, "config.yaml");
 		if (existsSync(configPath)) {
 			result.cliproxyConfig = configPath;
 		}
@@ -93,8 +93,8 @@ export const ensureDirectoryExists = (filePath: string): void => {
 export const getAllBackupFilePaths = (): string[] => {
 	const files = getCcsBackupFiles();
 	const paths: string[] = [];
-	if (files.configYaml) {
-		paths.push(files.configYaml);
+	if (files.config) {
+		paths.push(files.config);
 	}
 	paths.push(...files.settingsProfiles);
 	if (files.cliproxyAccounts) {
