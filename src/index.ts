@@ -1,6 +1,10 @@
 #!/usr/bin/env bun
 import { Command } from "commander";
 import pkg from "../package.json";
+import { ccsLogsCommand } from "./commands/ccs/logs.js";
+import { ccsStartCommand } from "./commands/ccs/start.js";
+import { ccsStatusCommand } from "./commands/ccs/status.js";
+import { ccsStopCommand } from "./commands/ccs/stop.js";
 import { completionsCommand } from "./commands/completions.js";
 import { configDumpCommand } from "./commands/config/dump.js";
 import { configLoadCommand } from "./commands/config/load.js";
@@ -176,6 +180,40 @@ const main = async (): Promise<void> => {
 		.option("-y, --yes", "skip confirmation prompt")
 		.action(async (input, options) => {
 			await configLoadCommand(input, options);
+		});
+	const ccsCommandGroup = program
+		.command("ccs")
+		.description("CCS daemon management");
+	ccsCommandGroup
+		.command("start")
+		.description("Start CCS config as background daemon")
+		.option("-f, --force", "Force restart if already running")
+		.action(async (options) => {
+			await ccsStartCommand(options);
+		});
+	ccsCommandGroup
+		.command("stop")
+		.description("Stop the CCS config daemon")
+		.option("-f, --force", "Force kill (SIGKILL)")
+		.action(async (options) => {
+			await ccsStopCommand(options);
+		});
+	ccsCommandGroup
+		.command("status")
+		.description("Check CCS config daemon status")
+		.action(async () => {
+			await ccsStatusCommand();
+		});
+	ccsCommandGroup
+		.command("logs")
+		.description("View CCS config daemon logs")
+		.option("-f, --follow", "Follow log output")
+		.option("-n, --lines <number>", "Number of lines", "50")
+		.action(async (options) => {
+			await ccsLogsCommand({
+				follow: options.follow,
+				lines: parseInt(options.lines, 10),
+			});
 		});
 	try {
 		await program.parseAsync(process.argv);
