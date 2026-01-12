@@ -1,105 +1,67 @@
-Default to using Bun instead of Node.js.
+# CLAUDE.md
 
-- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
-- Use `bun test` instead of `jest` or `vitest`
-- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
-- Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
-- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Use `bunx <package> <command>` instead of `npx <package> <command>`
-- Bun automatically loads .env, so don't use dotenv.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## APIs
+## Build & Development Commands
 
-- `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
-- `bun:sqlite` for SQLite. Don't use `better-sqlite3`.
-- `Bun.redis` for Redis. Don't use `ioredis`.
-- `Bun.sql` for Postgres. Don't use `pg` or `postgres.js`.
-- `WebSocket` is built-in. Don't use `ws`.
-- Prefer `Bun.file` over `node:fs`'s readFile/writeFile
-- Bun.$`ls` instead of execa.
+```bash
+# Install dependencies
+bun install
 
-## Testing
+# Format code
+bun run format
 
-Use `bun test` to run tests.
+# Lint code (with auto-fix)
+bun run lint
 
-```ts#index.test.ts
-import { test, expect } from "bun:test";
+# Run both format and lint
+bun run validate
 
-test("hello world", () => {
-  expect(1).toBe(1);
-});
+# Run tests
+bun test
+
+# Run a single test file
+bun test src/core/context-manager.test.ts
+
+# Run CLI locally during development
+bun src/index.ts [args]
 ```
 
-## Frontend
+## Architecture Overview
 
-Use HTML imports with `Bun.serve()`. Don't use `vite`. HTML imports fully support React, CSS, Tailwind.
+**ccst** (Claude Code Switch Tools) is a CLI tool that manages Claude Code IDE contexts and configurations. It allows users to switch between different permission sets, environments, and settings at user, project, and local levels.
 
-Server:
+### Core Components
 
-```ts#index.ts
-import index from "./index.html"
+- **`src/index.ts`** - Main CLI entry point using Commander.js. Defines all commands and routes to handlers.
+- **`src/core/context-manager.ts`** - Central class for all context operations (CRUD, switching, merging). All operations flow through this class.
+- **`src/core/merge-manager.ts`** - Handles permission merging with history tracking and smart deduplication.
+- **`src/utils/daemon.ts`** - Cross-platform daemon process management (Windows/Unix). Critical for CCS daemon commands.
+- **`src/utils/paths.ts`** - Resolves paths for all three settings levels (user/project/local).
 
-Bun.serve({
-  routes: {
-    "/": index,
-    "/api/users/:id": {
-      GET: (req) => {
-        return new Response(JSON.stringify({ id: req.params.id }));
-      },
-    },
-  },
-  // optional websocket support
-  websocket: {
-    open: (ws) => {
-      ws.send("Hello, world!");
-    },
-    message: (ws, message) => {
-      ws.send(message);
-    },
-    close: (ws) => {
-      // handle close
-    }
-  },
-  development: {
-    hmr: true,
-    console: true,
-  }
-})
-```
+### Settings Levels
 
-HTML files can import .tsx, .jsx or .js files directly and Bun's bundler will transpile & bundle automatically. `<link>` tags can point to stylesheets and Bun's CSS bundler will bundle.
+The tool operates at three hierarchical levels:
 
-```html#index.html
-<html>
-  <body>
-    <h1>Hello, world!</h1>
-    <script type="module" src="./frontend.tsx"></script>
-  </body>
-</html>
-```
+- **User:** `~/.claude/settings.json` and `~/.claude/settings/`
+- **Project:** `./.claude/settings.json` and `./.claude/settings/`
+- **Local:** `./.claude/settings.local.json` and `./.claude/settings/`
 
-With the following `frontend.tsx`:
+### Command Structure
 
-```tsx#frontend.tsx
-import React from "react";
-import { createRoot } from "react-dom/client";
+Commands in `src/commands/` are organized by function:
 
-// import .css files directly and it works
-import './index.css';
+- `ccs/` - CCS daemon management (start, stop, status, logs, setup, install)
+- `config/` - Configuration backup/restore (dump, load)
+- `import-profiles/` - Profile importers (ccs, configs)
 
-const root = createRoot(document.body);
+## Development Guidelines
 
-export default function Frontend() {
-  return <h1>Hello, world!</h1>;
-}
+- **Use Bun, not Node.js** - All file operations use `Bun.file()`, `Bun.write()`, `Bun.remove()`. See `AGENTS.md` for Bun API patterns.
+- **Use `Bun.$` for shell commands** - Not execa or child_process.
+- **Cross-platform handling** - `src/utils/daemon.ts` has separate code paths for Windows (taskkill, netstat) and Unix (lsof, kill signals). Test both when modifying.
+- **Formatting/Linting** - Uses Biome. Run `bun run validate` before committing.
 
-root.render(<Frontend />);
-```
+## Commit Message Pattern
 
-Then, run index.ts
-
-```sh
-bun --hot ./index.ts
-```
-
-For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+Follow existing commit prefixes: `feat:`, `fix:`, `chore:`
