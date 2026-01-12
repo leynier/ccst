@@ -1,5 +1,7 @@
 import { spawn } from "node:child_process";
-import { openSync } from "node:fs";
+import { openSync, unlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import pc from "picocolors";
 import {
 	ensureDaemonDir,
@@ -47,25 +49,50 @@ export const ccsStartCommand = async (
 	const ccsPath = getCcsExecutable();
 	let pid: number | undefined;
 	if (process.platform === "win32") {
-		// On Windows, use cmd /c start /B to launch without creating a new window
-		// This works with npm-installed .cmd wrappers that create their own console
-		const proc = spawn("cmd", ["/c", `start /B "" "${ccsPath}" config`], {
+		// VBScript is the ONLY reliable way to run a process completely hidden on Windows
+		// WScript.Shell.Run with 0 = hidden window, False = don't wait
+		// Redirect output to log file using cmd /c with shell redirection
+		const escapedLogPath = logPath.replace(/\\/g, "\\\\");
+		const vbsContent = `CreateObject("WScript.Shell").Run "cmd /c ${ccsPath} config >> ${escapedLogPath} 2>&1", 0, False`;
+		const vbsPath = join(tmpdir(), `ccs-start-${Date.now()}.vbs`);
+		await Bun.write(vbsPath, vbsContent);
+
+		// Run the vbs file (wscript itself doesn't show a window)
+		const proc = spawn("wscript", [vbsPath], {
+			detached: true,
 			stdio: "ignore",
 			windowsHide: true,
-			detached: true,
 		});
 		proc.unref();
 
-		// Wait for the process to start, then find it by port
-		console.log(pc.dim("Starting CCS config daemon..."));
-		await new Promise((resolve) => setTimeout(resolve, 2000));
+		// Clean up the vbs file after a short delay
+		setTimeout(() => {
+			try {
+				unlinkSync(vbsPath);
+			} catch {}
+		}, 1000);
 
-		// Find the process by port 3000 (dashboard port)
-		const foundPid = await getProcessByPort(3000);
+		// Poll for the port to become available
+		// ccs config takes ~6s to start (5s CLIProxy timeout + dashboard startup)
+		console.log(
+			pc.dim("Starting CCS config daemon (this may take a few seconds)..."),
+		);
+
+		const maxWaitMs = 15000; // 15 seconds max
+		const pollIntervalMs = 500;
+		const startTime = Date.now();
+		let foundPid: number | null = null;
+
+		while (Date.now() - startTime < maxWaitMs) {
+			foundPid = await getProcessByPort(3000);
+			if (foundPid !== null) break;
+			await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+		}
+
 		if (foundPid === null) {
 			console.log(pc.red("Failed to start CCS config daemon"));
 			console.log(
-				pc.dim("Check if ccs is installed: npm install -g @anthropic/ccs"),
+				pc.dim("Check if ccs is installed: npm install -g @kaitranntt/ccs"),
 			);
 			return;
 		}
