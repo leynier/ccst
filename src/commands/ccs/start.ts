@@ -5,6 +5,7 @@ import {
 	ensureDaemonDir,
 	getCcsExecutable,
 	getLogPath,
+	getProcessByPort,
 	getRunningDaemonPid,
 	isProcessRunning,
 	killProcessTree,
@@ -46,27 +47,29 @@ export const ccsStartCommand = async (
 	const ccsPath = getCcsExecutable();
 	let pid: number | undefined;
 	if (process.platform === "win32") {
-		// On Windows, use PowerShell with Start-Process -WindowStyle Hidden
-		// This is the only way to completely hide a console app that creates its own window
-		const ps = spawn(
-			"powershell",
-			[
-				"-WindowStyle",
-				"Hidden",
-				"-Command",
-				`$p = Start-Process -FilePath '${ccsPath}' -ArgumentList 'config' -WindowStyle Hidden -PassThru; $p.Id`,
-			],
-			{
-				stdio: ["ignore", "pipe", "ignore"],
-				windowsHide: true,
-			},
-		);
-		const output = await new Response(ps.stdout).text();
-		pid = Number.parseInt(output.trim(), 10);
-		if (!Number.isFinite(pid)) {
+		// On Windows, use cmd /c start /B to launch without creating a new window
+		// This works with npm-installed .cmd wrappers that create their own console
+		const proc = spawn("cmd", ["/c", `start /B "" "${ccsPath}" config`], {
+			stdio: "ignore",
+			windowsHide: true,
+			detached: true,
+		});
+		proc.unref();
+
+		// Wait for the process to start, then find it by port
+		console.log(pc.dim("Starting CCS config daemon..."));
+		await new Promise((resolve) => setTimeout(resolve, 2000));
+
+		// Find the process by port 3000 (dashboard port)
+		const foundPid = await getProcessByPort(3000);
+		if (foundPid === null) {
 			console.log(pc.red("Failed to start CCS config daemon"));
+			console.log(
+				pc.dim("Check if ccs is installed: npm install -g @anthropic/ccs"),
+			);
 			return;
 		}
+		pid = foundPid;
 	} else {
 		// On Unix, use regular spawn with detached mode
 		const logFd = openSync(logPath, "a");

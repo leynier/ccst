@@ -114,24 +114,41 @@ export const getProcessByPort = async (
 	port: number,
 ): Promise<number | null> => {
 	if (process.platform === "win32") {
-		const proc = Bun.spawn(["cmd", "/c", `netstat -ano | findstr :${port}`], {
+		// Run netstat directly and parse ourselves for exact port matching
+		const proc = Bun.spawn(["netstat", "-ano", "-p", "tcp"], {
 			stdout: "pipe",
 			stderr: "ignore",
 		});
 		const output = await new Response(proc.stdout).text();
 		await proc.exited;
-		const lines = output.trim().split("\n");
+
+		const lines = output.split("\n");
 		for (const line of lines) {
-			if (line.includes("LISTENING") || line.includes("ESTABLISHED")) {
-				const parts = line.trim().split(/\s+/);
-				const pid = Number.parseInt(parts[parts.length - 1], 10);
-				if (Number.isFinite(pid) && pid > 0) {
-					return pid;
-				}
+			// Format: Proto  Local Address          Foreign Address        State           PID
+			// TCP    0.0.0.0:3000           0.0.0.0:0              LISTENING       12345
+			const parts = line.trim().split(/\s+/);
+			if (parts.length < 5) continue;
+
+			const state = parts[3];
+			const localAddr = parts[1];
+			const pidStr = parts[4];
+			if (state !== "LISTENING" || !localAddr || !pidStr) continue;
+
+			// Extract port from local address (last part after colon)
+			const portMatch = localAddr.match(/:(\d+)$/);
+			if (!portMatch?.[1]) continue;
+
+			const localPort = Number.parseInt(portMatch[1], 10);
+			if (localPort !== port) continue;
+
+			const pid = Number.parseInt(pidStr, 10);
+			if (Number.isFinite(pid) && pid > 0) {
+				return pid;
 			}
 		}
 		return null;
 	}
+	// Unix: use lsof
 	const proc = Bun.spawn(["lsof", "-ti", `:${port}`], {
 		stdout: "pipe",
 		stderr: "ignore",
