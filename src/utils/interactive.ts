@@ -71,6 +71,9 @@ const readStdinLine = async (): Promise<string> => {
 		const cleanup = () => {
 			process.stdin.off("data", onData);
 			process.stdin.off("end", onEnd);
+			if (process.stdin.isTTY) {
+				process.stdin.pause();
+			}
 		};
 		if (process.stdin.isTTY) {
 			process.stdin.resume();

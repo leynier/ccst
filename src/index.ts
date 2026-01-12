@@ -1,7 +1,9 @@
 #!/usr/bin/env bun
 import { Command } from "commander";
 import pkg from "../package.json";
+import { ccsInstallCommand } from "./commands/ccs/install.js";
 import { ccsLogsCommand } from "./commands/ccs/logs.js";
+import { ccsSetupCommand } from "./commands/ccs/setup.js";
 import { ccsStartCommand } from "./commands/ccs/start.js";
 import { ccsStatusCommand } from "./commands/ccs/status.js";
 import { ccsStopCommand } from "./commands/ccs/stop.js";
@@ -214,6 +216,19 @@ const main = async (): Promise<void> => {
 				follow: options.follow,
 				lines: parseInt(options.lines, 10),
 			});
+		});
+	ccsCommandGroup
+		.command("setup")
+		.description("Run CCS initial setup")
+		.option("-f, --force", "Force setup even if already configured")
+		.action(async (options) => {
+			await ccsSetupCommand(options);
+		});
+	ccsCommandGroup
+		.command("install")
+		.description("Install CCS CLI tool")
+		.action(async () => {
+			await ccsInstallCommand();
 		});
 	try {
 		await program.parseAsync(process.argv);
