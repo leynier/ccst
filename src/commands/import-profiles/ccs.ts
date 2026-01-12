@@ -7,7 +7,7 @@ import { deepMerge } from "../../utils/deep-merge.js";
 import { readJson, readJsonIfExists } from "../../utils/json.js";
 
 const defaultConfigsDir = (): string => path.join(homedir(), ".ccst");
-const ccsDir = (): string => path.join(homedir(), ".ccs");
+export const ccsDir = (): string => path.join(homedir(), ".ccs");
 
 const ensureDefaultConfig = async (
 	manager: ContextManager,
@@ -49,9 +49,10 @@ const importProfile = async (
 	profileName: string,
 	merged: Record<string, unknown>,
 ): Promise<void> => {
-	await manager.deleteContext(profileName).catch(() => undefined);
-	const input = `${JSON.stringify(merged, null, 2)}\n`;
-	await manager.importContextFromString(profileName, input);
+	// Write directly to the context file, overwriting if exists
+	const contextPath = path.join(manager.contextsDir, `${profileName}.json`);
+	const content = `${JSON.stringify(merged, null, 2)}\n`;
+	await Bun.write(contextPath, content);
 };
 
 const createDefaultProfileIfNeeded = async (
@@ -65,15 +66,19 @@ const createDefaultProfileIfNeeded = async (
 	await importProfile(manager, "default", defaultProfile);
 };
 
-export const importFromCcs = async (
+export type PerformCcsImportResult = {
+	importedCount: number;
+	profileNames: string[];
+};
+
+export const performCcsImport = async (
 	manager: ContextManager,
 	configsDir?: string,
-): Promise<void> => {
+): Promise<PerformCcsImportResult> => {
 	const ccsPath = ccsDir();
 	if (!existsSync(ccsPath)) {
 		throw new Error(`CCS directory not found: ${ccsPath}`);
 	}
-	console.log(`📥 Importing profiles from CCS settings...`);
 	const dir = configsDir ?? defaultConfigsDir();
 	const { created } = await ensureDefaultConfig(manager, dir);
 	const defaultConfig = await loadDefaultConfig(dir);
@@ -91,23 +96,34 @@ export const importFromCcs = async (
 	} catch {
 		entries = [];
 	}
-	let importedCount = 0;
+	const profileNames: string[] = [];
 	for (const fileName of entries) {
 		const settingsPath = path.join(ccsPath, fileName);
 		const profileName = fileName.replace(/\.settings\.json$/u, "");
-		console.log(`  📦 Importing '${colors.cyan(profileName)}'...`);
 		const settings = await readJson<Record<string, unknown>>(settingsPath);
 		const merged = deepMerge(defaultConfig, settings);
 		if (currentContext && currentContext === profileName) {
 			await manager.unsetContext();
 		}
 		await importProfile(manager, profileName, merged);
-		importedCount++;
+		profileNames.push(profileName);
 	}
 	if (currentContext) {
 		await manager.switchContext(currentContext);
 	}
+	return { importedCount: profileNames.length, profileNames };
+};
+
+export const importFromCcs = async (
+	manager: ContextManager,
+	configsDir?: string,
+): Promise<void> => {
+	console.log(`📥 Importing profiles from CCS settings...`);
+	const result = await performCcsImport(manager, configsDir);
+	for (const profileName of result.profileNames) {
+		console.log(`  📦 Imported '${colors.cyan(profileName)}'`);
+	}
 	console.log(
-		`✅ Imported ${colors.bold(colors.green(String(importedCount)))} profiles from CCS`,
+		`✅ Imported ${colors.bold(colors.green(String(result.importedCount)))} profiles from CCS`,
 	);
 };

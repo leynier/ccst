@@ -195,11 +195,19 @@ const main = async (): Promise<void> => {
 			"-p, --port <number>",
 			"Dashboard port (auto-detect if not specified)",
 		)
+		.option("-W, --no-watch", "Skip file watcher")
+		.option(
+			"-t, --timeout <seconds>",
+			"Timeout in seconds for daemon startup (Windows only)",
+			"30",
+		)
 		.action(async (options) => {
 			await ccsStartCommand({
 				force: options.force,
 				keepLogs: options.keepLogs,
 				port: options.port ? Number.parseInt(options.port, 10) : undefined,
+				noWatch: options.watch === false,
+				timeout: Number.parseInt(options.timeout, 10) * 1000,
 			});
 		});
 	ccsCommandGroup

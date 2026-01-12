@@ -8,6 +8,10 @@ import {
 	removePid,
 	removePorts,
 } from "../../utils/daemon.js";
+import {
+	getRunningWatcherPid,
+	stopWatcher,
+} from "../../utils/watcher-daemon.js";
 
 export type StopOptions = {
 	force?: boolean;
@@ -44,6 +48,16 @@ export const ccsStopCommand = async (options?: StopOptions): Promise<void> => {
 	}
 	// Clean up ports file
 	removePorts();
+
+	// Stop file watcher
+	const watcherPid = await getRunningWatcherPid();
+	if (watcherPid !== null) {
+		const watcherStopped = await stopWatcher(options?.force);
+		if (watcherStopped) {
+			console.log(pc.dim(`File watcher stopped (PID: ${watcherPid})`));
+		}
+	}
+
 	if (!stopped) {
 		console.log(pc.yellow("CCS config daemon is not running"));
 	}
