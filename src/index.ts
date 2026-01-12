@@ -191,8 +191,16 @@ const main = async (): Promise<void> => {
 		.description("Start CCS config as background daemon")
 		.option("-f, --force", "Force restart if already running")
 		.option("--keep-logs", "Keep existing log file (append)")
+		.option(
+			"-p, --port <number>",
+			"Dashboard port (auto-detect if not specified)",
+		)
 		.action(async (options) => {
-			await ccsStartCommand(options);
+			await ccsStartCommand({
+				force: options.force,
+				keepLogs: options.keepLogs,
+				port: options.port ? Number.parseInt(options.port, 10) : undefined,
+			});
 		});
 	ccsCommandGroup
 		.command("stop")

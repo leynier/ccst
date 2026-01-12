@@ -2,10 +2,12 @@ import { spawn } from "node:child_process";
 import { openSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import getPort from "get-port";
 import pc from "picocolors";
 import {
 	ensureDaemonDir,
 	getCcsExecutable,
+	getCliproxyPort,
 	getLogPath,
 	getProcessByPort,
 	getRunningDaemonPid,
@@ -13,11 +15,13 @@ import {
 	killProcessTree,
 	truncateFile,
 	writePid,
+	writePorts,
 } from "../../utils/daemon.js";
 
 export type StartOptions = {
 	force?: boolean;
 	keepLogs?: boolean;
+	port?: number;
 };
 
 export const ccsStartCommand = async (
@@ -59,6 +63,20 @@ export const ccsStartCommand = async (
 			);
 		}
 	}
+	// Detect ports
+	const cliproxyPort = await getCliproxyPort();
+	const dashboardPort =
+		options?.port ??
+		(await getPort({
+			port: [3000, 3001, 3002, 8000, 8080],
+		}));
+	// Save ports for stop command
+	await writePorts({ dashboard: dashboardPort, cliproxy: cliproxyPort });
+	console.log(
+		pc.dim(
+			`Using dashboard port: ${dashboardPort}, CLIProxy port: ${cliproxyPort}`,
+		),
+	);
 	const ccsPath = getCcsExecutable();
 	let pid: number | undefined;
 	if (process.platform === "win32") {
@@ -66,7 +84,7 @@ export const ccsStartCommand = async (
 		// WScript.Shell.Run with 0 = hidden window, False = don't wait
 		// Redirect output to log file using cmd /c with shell redirection
 		const escapedLogPath = logPath.replace(/\\/g, "\\\\");
-		const vbsContent = `CreateObject("WScript.Shell").Run "cmd /c ${ccsPath} config >> ${escapedLogPath} 2>&1", 0, False`;
+		const vbsContent = `CreateObject("WScript.Shell").Run "cmd /c ${ccsPath} config --port ${dashboardPort} >> ${escapedLogPath} 2>&1", 0, False`;
 		const vbsPath = join(tmpdir(), `ccs-start-${Date.now()}.vbs`);
 		await Bun.write(vbsPath, vbsContent);
 
@@ -82,7 +100,7 @@ export const ccsStartCommand = async (
 		setTimeout(() => {
 			try {
 				unlinkSync(vbsPath);
-			} catch { }
+			} catch {}
 		}, 1000);
 
 		// Poll for the port to become available
@@ -97,7 +115,7 @@ export const ccsStartCommand = async (
 		let foundPid: number | null = null;
 
 		while (Date.now() - startTime < maxWaitMs) {
-			foundPid = await getProcessByPort(3000);
+			foundPid = await getProcessByPort(dashboardPort);
 			if (foundPid !== null) break;
 			await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
 		}
@@ -113,7 +131,7 @@ export const ccsStartCommand = async (
 	} else {
 		// On Unix, use regular spawn with detached mode
 		const logFd = openSync(logPath, "a");
-		const child = spawn(ccsPath, ["config"], {
+		const child = spawn(ccsPath, ["config", "--port", String(dashboardPort)], {
 			detached: true,
 			stdio: ["ignore", logFd, logFd],
 		});

@@ -87,8 +87,84 @@ export const getCcsExecutable = (): string => {
 	return "ccs";
 };
 
-// Known CCS daemon ports
-export const CCS_PORTS = [3000, 8317];
+// Default CCS daemon ports (fallback)
+export const DEFAULT_DASHBOARD_PORT = 3000;
+export const DEFAULT_CLIPROXY_PORT = 8317;
+
+// Ports file path
+export const getPortsPath = (): string => join(getDaemonDir(), "ports.json");
+
+// Type for daemon ports
+export type DaemonPorts = {
+	dashboard: number;
+	cliproxy: number;
+};
+
+// Read saved ports
+export const readPorts = async (): Promise<DaemonPorts | null> => {
+	const portsPath = getPortsPath();
+	if (!existsSync(portsPath)) {
+		return null;
+	}
+	try {
+		const content = await Bun.file(portsPath).text();
+		const ports = JSON.parse(content) as DaemonPorts;
+		if (
+			typeof ports.dashboard === "number" &&
+			typeof ports.cliproxy === "number"
+		) {
+			return ports;
+		}
+		return null;
+	} catch {
+		return null;
+	}
+};
+
+// Write ports to file
+export const writePorts = async (ports: DaemonPorts): Promise<void> => {
+	ensureDaemonDir();
+	await Bun.write(getPortsPath(), JSON.stringify(ports, null, 2));
+};
+
+// Remove ports file
+export const removePorts = (): void => {
+	const portsPath = getPortsPath();
+	if (existsSync(portsPath)) {
+		unlinkSync(portsPath);
+	}
+};
+
+// Read CLIProxy port from config.yaml
+export const getCliproxyPort = async (): Promise<number> => {
+	const configPath = join(homedir(), ".ccs", "cliproxy", "config.yaml");
+	if (!existsSync(configPath)) {
+		return DEFAULT_CLIPROXY_PORT;
+	}
+	try {
+		const content = await Bun.file(configPath).text();
+		// Simple YAML parsing for "port: XXXX"
+		const match = content.match(/^port:\s*(\d+)/m);
+		if (match?.[1]) {
+			const port = Number.parseInt(match[1], 10);
+			if (Number.isFinite(port) && port > 0) {
+				return port;
+			}
+		}
+		return DEFAULT_CLIPROXY_PORT;
+	} catch {
+		return DEFAULT_CLIPROXY_PORT;
+	}
+};
+
+// Get ports to kill (from saved file or defaults)
+export const getPortsToKill = async (): Promise<number[]> => {
+	const saved = await readPorts();
+	if (saved) {
+		return [saved.dashboard, saved.cliproxy];
+	}
+	return [DEFAULT_DASHBOARD_PORT, DEFAULT_CLIPROXY_PORT];
+};
 
 // Kill process tree (on Windows, kills all child processes)
 export const killProcessTree = async (

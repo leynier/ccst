@@ -1,11 +1,12 @@
 import pc from "picocolors";
 import {
-	CCS_PORTS,
+	getPortsToKill,
 	getRunningDaemonPid,
 	isProcessRunning,
 	killProcessByPort,
 	killProcessTree,
 	removePid,
+	removePorts,
 } from "../../utils/daemon.js";
 
 export type StopOptions = {
@@ -32,13 +33,17 @@ export const ccsStopCommand = async (options?: StopOptions): Promise<void> => {
 		stopped = true;
 	}
 	// Phase 2: Kill processes by port (especially important on Windows)
-	for (const port of CCS_PORTS) {
+	// Use saved ports or fallback to defaults
+	const ports = await getPortsToKill();
+	for (const port of ports) {
 		const killed = await killProcessByPort(port, options?.force ?? true);
 		if (killed) {
 			console.log(pc.dim(`Cleaned up process on port ${port}`));
 			stopped = true;
 		}
 	}
+	// Clean up ports file
+	removePorts();
 	if (!stopped) {
 		console.log(pc.yellow("CCS config daemon is not running"));
 	}
