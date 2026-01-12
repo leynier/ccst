@@ -11,11 +11,13 @@ import {
 	getRunningDaemonPid,
 	isProcessRunning,
 	killProcessTree,
+	truncateFile,
 	writePid,
 } from "../../utils/daemon.js";
 
 export type StartOptions = {
 	force?: boolean;
+	keepLogs?: boolean;
 };
 
 export const ccsStartCommand = async (
@@ -46,6 +48,17 @@ export const ccsStartCommand = async (
 	}
 	ensureDaemonDir();
 	const logPath = getLogPath();
+	if (!options?.keepLogs) {
+		try {
+			await truncateFile(logPath);
+		} catch {
+			console.warn(
+				pc.yellow(
+					`Warning: could not truncate log; continuing (logs will be appended): ${logPath}`,
+				),
+			);
+		}
+	}
 	const ccsPath = getCcsExecutable();
 	let pid: number | undefined;
 	if (process.platform === "win32") {
@@ -69,7 +82,7 @@ export const ccsStartCommand = async (
 		setTimeout(() => {
 			try {
 				unlinkSync(vbsPath);
-			} catch {}
+			} catch { }
 		}, 1000);
 
 		// Poll for the port to become available

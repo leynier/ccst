@@ -190,6 +190,7 @@ const main = async (): Promise<void> => {
 		.command("start")
 		.description("Start CCS config as background daemon")
 		.option("-f, --force", "Force restart if already running")
+		.option("--keep-logs", "Keep existing log file (append)")
 		.action(async (options) => {
 			await ccsStartCommand(options);
 		});

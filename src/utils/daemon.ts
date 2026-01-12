@@ -11,6 +11,11 @@ export const getPidPath = (): string => join(getDaemonDir(), "ccs-config.pid");
 // Log file path
 export const getLogPath = (): string => join(getDaemonDir(), "ccs-config.log");
 
+// Truncate a file (or create it empty if missing)
+export const truncateFile = async (filePath: string): Promise<void> => {
+	await Bun.write(filePath, "");
+};
+
 // Ensure daemon directory exists
 export const ensureDaemonDir = (): void => {
 	const dir = getDaemonDir();
