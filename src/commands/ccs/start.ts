@@ -44,29 +44,45 @@ export const ccsStartCommand = async (
 	ensureDaemonDir();
 	const logPath = getLogPath();
 	const ccsPath = getCcsExecutable();
-	// Open log file for writing (append mode)
-	const logFd = openSync(logPath, "a");
-	// Spawn detached process
-	// On Windows, use "start /B" to run without a visible console window
-	const child =
-		process.platform === "win32"
-			? spawn("cmd", ["/c", "start", "/B", ccsPath, "config"], {
-					detached: true,
-					stdio: ["ignore", logFd, logFd],
-					windowsHide: true,
-				})
-			: spawn(ccsPath, ["config"], {
-					detached: true,
-					stdio: ["ignore", logFd, logFd],
-				});
-	if (!child.pid) {
-		console.log(pc.red("Failed to start CCS config daemon"));
-		return;
+	let pid: number | undefined;
+	if (process.platform === "win32") {
+		// On Windows, use PowerShell with Start-Process -WindowStyle Hidden
+		// This is the only way to completely hide a console app that creates its own window
+		const ps = spawn(
+			"powershell",
+			[
+				"-WindowStyle",
+				"Hidden",
+				"-Command",
+				`$p = Start-Process -FilePath '${ccsPath}' -ArgumentList 'config' -WindowStyle Hidden -PassThru; $p.Id`,
+			],
+			{
+				stdio: ["ignore", "pipe", "ignore"],
+				windowsHide: true,
+			},
+		);
+		const output = await new Response(ps.stdout).text();
+		pid = Number.parseInt(output.trim(), 10);
+		if (!Number.isFinite(pid)) {
+			console.log(pc.red("Failed to start CCS config daemon"));
+			return;
+		}
+	} else {
+		// On Unix, use regular spawn with detached mode
+		const logFd = openSync(logPath, "a");
+		const child = spawn(ccsPath, ["config"], {
+			detached: true,
+			stdio: ["ignore", logFd, logFd],
+		});
+		if (!child.pid) {
+			console.log(pc.red("Failed to start CCS config daemon"));
+			return;
+		}
+		pid = child.pid;
+		child.unref();
 	}
-	await writePid(child.pid);
-	// Unref to allow parent to exit independently
-	child.unref();
-	console.log(pc.green(`CCS config daemon started (PID: ${child.pid})`));
+	await writePid(pid);
+	console.log(pc.green(`CCS config daemon started (PID: ${pid})`));
 	console.log(pc.dim(`Logs: ${logPath}`));
 	console.log(pc.dim("Run 'ccst ccs status' to check status"));
 	console.log(pc.dim("Run 'ccst ccs logs' to view logs"));
