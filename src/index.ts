@@ -10,23 +10,11 @@ import { ccsStopCommand } from "./commands/ccs/stop.js";
 import { completionsCommand } from "./commands/completions.js";
 import { configDumpCommand } from "./commands/config/dump.js";
 import { configLoadCommand } from "./commands/config/load.js";
-import { createCommand } from "./commands/create.js";
-import { deleteCommand } from "./commands/delete.js";
-import { editCommand } from "./commands/edit.js";
-import { exportCommand } from "./commands/export.js";
-import { importCommand } from "./commands/import.js";
-import { importFromCcs } from "./commands/import-profiles/ccs.js";
-import { importFromConfigs } from "./commands/import-profiles/configs.js";
-import { listCommand } from "./commands/list.js";
 import {
 	mergeCommand,
 	mergeHistoryCommand,
 	unmergeCommand,
 } from "./commands/merge.js";
-import { renameCommand } from "./commands/rename.js";
-import { showCommand } from "./commands/show.js";
-import { switchCommand, switchPreviousCommand } from "./commands/switch.js";
-import { unsetCommand } from "./commands/unset.js";
 import { ContextManager } from "./core/context-manager.js";
 import { resolveSettingsLevel } from "./core/settings-level.js";
 import { getPaths } from "./utils/paths.js";
@@ -38,18 +26,8 @@ const main = async (): Promise<void> => {
 		.name("ccst")
 		.description("Claude Code Switch Tools")
 		.version(pkg.version)
-		.argument("[context]", "context name")
-		.option("-d, --delete", "delete context")
-		.option("-c, --current", "print current context")
-		.option("-r, --rename", "rename context")
-		.option("-n, --new", "create new context")
-		.option("-e, --edit", "edit context")
-		.option("-s, --show", "show context")
-		.option("--export", "export context to stdout")
-		.option("--import", "import context from stdin")
-		.option("-u, --unset", "unset current context")
+		.argument("[context]", "context name for merge operations")
 		.option("--completions <shell>", "generate completions")
-		.option("-q, --quiet", "show only current context")
 		.option("--in-project", "use project settings level")
 		.option("--local", "use local settings level")
 		.option("--merge-from <source>", "merge permissions from source")
@@ -65,49 +43,6 @@ const main = async (): Promise<void> => {
 				}
 				const level = resolveSettingsLevel(options);
 				const manager = new ContextManager(getPaths(level));
-				if (options.current) {
-					const current = await manager.getCurrentContext();
-					if (current) {
-						console.log(current);
-					}
-					return;
-				}
-				if (options.unset) {
-					await unsetCommand(manager);
-					return;
-				}
-				if (options.delete) {
-					await deleteCommand(manager, context);
-					return;
-				}
-				if (options.rename) {
-					await renameCommand(manager, context);
-					return;
-				}
-				if (options.new) {
-					if (!context) {
-						await manager.interactiveCreateContext();
-						return;
-					}
-					await createCommand(manager, context);
-					return;
-				}
-				if (options.edit) {
-					await editCommand(manager, context);
-					return;
-				}
-				if (options.show) {
-					await showCommand(manager, context);
-					return;
-				}
-				if (options.export) {
-					await exportCommand(manager, context);
-					return;
-				}
-				if (options.import) {
-					await importCommand(manager, context);
-					return;
-				}
 				if (options.mergeFrom) {
 					await mergeCommand(
 						manager,
@@ -130,40 +65,9 @@ const main = async (): Promise<void> => {
 					await mergeHistoryCommand(manager, context);
 					return;
 				}
-				if (context === "-") {
-					await switchPreviousCommand(manager);
-					return;
-				}
-				if (context) {
-					await switchCommand(manager, context);
-					return;
-				}
-				if (process.env.CCTX_INTERACTIVE === "1") {
-					await manager.interactiveSelect();
-					return;
-				}
-				await listCommand(manager, options.quiet as boolean);
+				program.help();
 			},
 		);
-	const importCommandGroup = program
-		.command("import")
-		.description("import profiles");
-	importCommandGroup
-		.command("ccs")
-		.description("import from CCS settings")
-		.option("-d, --configs-dir <dir>", "configs directory")
-		.action(async (options) => {
-			const manager = new ContextManager(getPaths("user"));
-			await importFromCcs(manager, options.configsDir);
-		});
-	importCommandGroup
-		.command("configs")
-		.description("import from configs directory")
-		.option("-d, --configs-dir <dir>", "configs directory")
-		.action(async (options) => {
-			const manager = new ContextManager(getPaths("user"));
-			await importFromConfigs(manager, options.configsDir);
-		});
 	const configCommandGroup = program
 		.command("config")
 		.description("CCS config backup/restore");

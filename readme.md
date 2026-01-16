@@ -1,17 +1,16 @@
 # ccst - Claude Code Switch Tools
 
-> Fast and predictable way to manage Claude Code contexts (`~/.claude/settings.json`)
+> Tools for managing Claude Code settings and CCS daemon
 
-**ccst** (Claude Code Switch Tools) is inspired by [cctx](https://github.com/nwiizo/cctx), which is itself inspired by kubectx, and ports the cctx experience to TypeScript with additional capabilities. Switch between permission sets, environments, and settings with a single command.
+**ccst** (Claude Code Switch Tools) provides utilities for managing Claude Code configurations, including permission merging, CCS daemon management, and configuration backup/restore.
 
 ## Features
 
-- Instant context switching
-- Predictable UX with user-level defaults
-- Security-first separation of work, personal, and project contexts
+- Permission merging with history tracking
+- CCS daemon management
+- Configuration backup and restore
+- Settings level management (user/project/local)
 - Shell completions for major shells
-- Previous context quick switch with `ccst -`
-- File-based JSON contexts you can edit manually
 
 ## Quick Start
 
@@ -36,90 +35,7 @@ pnpm add -g @leynier/ccst
 yarn global add @leynier/ccst
 ```
 
-### 30-Second Setup
-
-```bash
-# 1. Create your first context from current settings
-ccst -n personal
-
-# 2. Create a restricted work context
-ccst -n work
-
-# 3. Switch between contexts
-ccst work      # Switch to work
-ccst personal  # Switch to personal
-ccst -         # Switch back to previous
-```
-
 ## Usage
-
-### Basic Commands
-
-```bash
-# List all contexts
-ccst
-
-# Switch to a context
-ccst work
-
-# Switch to previous context
-ccst -
-
-# Show current context
-ccst -c
-```
-
-### Settings Level Management
-
-ccst respects Claude Code's settings hierarchy with explicit flags:
-
-```bash
-# Default: always uses user-level contexts
-ccst                       # Manages ~/.claude/settings.json
-
-# Explicit flags for project/local contexts
-ccst --in-project          # Manages ./.claude/settings.json
-ccst --local               # Manages ./.claude/settings.local.json
-
-# All commands work with any level
-ccst --in-project work     # Switch to 'work' in project contexts
-ccst --local staging       # Switch to 'staging' in local contexts
-```
-
-### Context Management
-
-```bash
-# Create new context from current settings
-ccst -n project-alpha
-
-# Delete a context
-ccst -d old-project
-
-# Rename a context (prompts for new name)
-ccst -r old-name
-
-# Edit context with $EDITOR
-ccst -e work
-
-# Show context content (JSON)
-ccst -s production
-
-# Unset current context
-ccst -u
-```
-
-### Import/Export
-
-```bash
-# Export context to file
-ccst --export production > prod-settings.json
-
-# Import context from file
-ccst --import staging < staging-settings.json
-
-# Share contexts between machines
-ccst --export work | ssh remote-host 'ccst --import work'
-```
 
 ### Merge Permissions
 
@@ -134,6 +50,9 @@ ccst --merge-from personal work
 
 # Merge from a specific file
 ccst --merge-from /path/to/permissions.json staging
+
+# Merge full settings (not just permissions)
+ccst --merge-from user --merge-full
 
 # Remove previously merged permissions
 ccst --unmerge user
@@ -152,37 +71,17 @@ Merge features:
 - Reversible unmerge
 - Targeted merges
 
-### Shell Completions
+### Settings Level Management
 
-Enable tab completion for faster workflow:
-
-```bash
-# Bash
-ccst --completions bash > ~/.local/share/bash-completion/completions/ccst
-
-# Zsh
-ccst --completions zsh > /usr/local/share/zsh/site-functions/_ccst
-
-# Fish
-ccst --completions fish > ~/.config/fish/completions/ccst.fish
-
-# PowerShell
-ccst --completions powershell > ccst.ps1
-```
-
-### Importing Profiles
-
-ccst includes importer commands to migrate existing profiles:
+ccst respects Claude Code's settings hierarchy with explicit flags:
 
 ```bash
-# Import from CCS profiles (~/.ccs/*.settings.json)
-ccst import ccs
+# Default: always uses user-level contexts
+ccst --merge-from user              # Manages ~/.claude/settings.json
 
-# Import from configs directory (default: ~/.ccst)
-ccst import configs
-
-# Use a custom configs directory
-ccst import configs -d /path/to/configs
+# Explicit flags for project/local contexts
+ccst --in-project --merge-from user # Manages ./.claude/settings.json
+ccst --local --merge-from user      # Manages ./.claude/settings.local.json
 ```
 
 ## CCS Daemon Management
@@ -210,6 +109,12 @@ ccst ccs start
 
 # Start with specific dashboard port
 ccst ccs start -p 3001
+
+# Skip file watcher
+ccst ccs start -W
+
+# Set startup timeout (Windows only, default: 30 seconds)
+ccst ccs start -t 60
 
 # Force restart if already running
 ccst ccs start -f
@@ -266,8 +171,6 @@ ccst config load -y
 
 ## File Structure
 
-Contexts are stored as individual JSON files at different levels:
-
 User level (`~/.claude/`):
 
 ```text
@@ -301,88 +204,7 @@ CCS daemon files (`~/.ccs/`):
 └── .daemon.ports          # Dashboard port tracking
 ```
 
-## Interactive Mode
-
-When no arguments are provided, ccst can enter interactive mode:
-
-- fzf integration when available
-- Built-in fallback selector when fzf is not installed
-- Current context highlighted in the list
-
-```bash
-# Interactive context selection
-CCTX_INTERACTIVE=1 ccst
-```
-
-## Common Workflows
-
-### Professional Setup
-
-```bash
-# Create restricted work context for safer collaboration
-ccst -n work
-ccst -e work  # Edit to add restrictions
-```
-
-### Project-Based Contexts
-
-```bash
-# Create project-specific contexts
-ccst -n client-alpha
-ccst -n side-project
-ccst -n experiments
-
-# Switch based on current work
-ccst client-alpha
-ccst experiments
-```
-
-### Daily Context Switching
-
-```bash
-# Morning: start with work context
-ccst work
-
-# Need full access for personal project
-ccst personal
-
-# Quick switch back to work
-ccst -
-
-# Check current context anytime
-ccst -c
-```
-
 ## Complete Command Reference
-
-### Basic Operations
-
-- `ccst` - List contexts (defaults to user-level)
-- `ccst <name>` - Switch to context
-- `ccst -` - Switch to previous context
-- `ccst -c` - Show current context name
-- `ccst -q` - Quiet mode (only show current context)
-
-### Context Management Reference
-
-- `ccst -n <name>` - Create new context from current settings
-- `ccst -d <name>` - Delete context (interactive if no name)
-- `ccst -r <name>` - Rename context (prompts for new name)
-- `ccst -e [name]` - Edit context with $EDITOR
-- `ccst -s [name]` - Show context content (JSON)
-- `ccst -u` - Unset current context (removes settings file)
-
-### Import/Export Reference
-
-- `ccst --export [name]` - Export context to stdout
-- `ccst --import <name>` - Import context from stdin
-
-### Importer Commands
-
-- `ccst import ccs` - Import from CCS settings (~/.ccs)
-- `ccst import configs` - Import from configs directory (default: ~/.ccst)
-- `ccst import configs -d <dir>` - Import from a custom configs directory
-- `ccst import ccs -d <dir>` - Use custom configs directory for default.json
 
 ### Merge Operations
 
@@ -407,6 +229,8 @@ ccst -c
 - `ccst ccs start` - Start CCS daemon
 - `ccst ccs start -f` - Force restart if already running
 - `ccst ccs start -p <port>` - Start with specific dashboard port
+- `ccst ccs start -W` - Start without file watcher
+- `ccst ccs start -t <seconds>` - Set startup timeout (Windows only)
 - `ccst ccs start --keep-logs` - Keep existing logs (append instead of truncate)
 - `ccst ccs stop` - Stop CCS daemon
 - `ccst ccs stop -f` - Force kill daemon (SIGKILL)
@@ -422,12 +246,30 @@ ccst -c
 - `ccst config load -r` - Replace all existing files during import
 - `ccst config load -y` - Skip confirmation prompt
 
+### Shell Completions
+
+Enable tab completion for faster workflow:
+
+```bash
+# Bash
+ccst --completions bash > ~/.local/share/bash-completion/completions/ccst
+
+# Zsh
+ccst --completions zsh > /usr/local/share/zsh/site-functions/_ccst
+
+# Fish
+ccst --completions fish > ~/.config/fish/completions/ccst.fish
+
+# PowerShell
+ccst --completions powershell > ccst.ps1
+```
+
 ### Other Options
 
 - `ccst --completions <shell>` - Generate shell completions
 - `ccst --help` - Show help information
 - `ccst --version` - Show version
 
-## Compatibility Note
+## Note
 
-ccst is a TypeScript port of cctx with some differences. Behavior and output are intentionally close to cctx, but there may be small UX or implementation differences.
+Profile switching functionality has been removed from ccst as it is now natively supported by CCS. This tool now focuses on permission merging, daemon management, and configuration backup/restore operations.

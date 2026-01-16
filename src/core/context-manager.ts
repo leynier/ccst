@@ -1,11 +1,9 @@
-import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import type { SettingsLevel } from "../types/index.js";
 import { colors } from "../utils/colors.js";
 import { readJson, writeJson } from "../utils/json.js";
 import type { Paths } from "../utils/paths.js";
-import { hasLocalContexts, hasProjectContexts } from "../utils/paths.js";
 import {
 	formatHistory,
 	loadHistory,
@@ -15,7 +13,7 @@ import {
 	unmergeFull,
 	unmergePermissions,
 } from "./merge-manager.js";
-import { loadState, saveState, setCurrent, unsetCurrent } from "./state.js";
+import { loadState } from "./state.js";
 
 export class ContextManager {
 	public readonly contextsDir: string;
@@ -35,286 +33,9 @@ export class ContextManager {
 		return path.join(this.contextsDir, `${name}.json`);
 	}
 
-	public async listContexts(): Promise<string[]> {
-		let entries: string[] = [];
-		try {
-			entries = readdirSync(this.contextsDir);
-		} catch {
-			entries = [];
-		}
-		const contexts = entries
-			.filter((name) => name.endsWith(".json") && !name.startsWith("."))
-			.map((name) => name.replace(/\.json$/u, ""));
-		contexts.sort();
-		return contexts;
-	}
-
 	public async getCurrentContext(): Promise<string | undefined> {
 		const state = await loadState(this.statePath);
 		return state.current;
-	}
-
-	public async switchContext(name: string): Promise<void> {
-		const contexts = await this.listContexts();
-		if (!contexts.includes(name)) {
-			throw new Error(`error: no context exists with the name "${name}"`);
-		}
-		const state = await loadState(this.statePath);
-		const nextState = setCurrent(state, name);
-		const content = await Bun.file(this.contextPath(name)).text();
-		mkdirSync(path.dirname(this.settingsPath), { recursive: true });
-		await Bun.write(this.settingsPath, content);
-		await saveState(this.statePath, nextState);
-		console.log(`Switched to context "${colors.bold(colors.green(name))}"`);
-	}
-
-	public async switchToPrevious(): Promise<void> {
-		const state = await loadState(this.statePath);
-		if (!state.previous) {
-			throw new Error("error: no previous context");
-		}
-		await this.switchContext(state.previous);
-	}
-
-	public async createContext(name: string): Promise<void> {
-		this.validateContextName(name);
-		const contexts = await this.listContexts();
-		if (contexts.includes(name)) {
-			throw new Error(`error: context "${name}" already exists`);
-		}
-		const contextPath = this.contextPath(name);
-		if (existsSync(this.settingsPath)) {
-			await Bun.write(contextPath, await Bun.file(this.settingsPath).text());
-			console.log(
-				`Context "${colors.bold(colors.green(name))}" created from current settings`,
-			);
-			return;
-		}
-		await writeJson(contextPath, {});
-		console.log(`Context "${colors.bold(colors.green(name))}" created (empty)`);
-	}
-
-	public async deleteContext(name: string): Promise<void> {
-		const state = await loadState(this.statePath);
-		if (state.current === name) {
-			throw new Error(`error: cannot delete the active context "${name}"`);
-		}
-		const contextPath = this.contextPath(name);
-		if (!existsSync(contextPath)) {
-			throw new Error(`error: no context exists with the name "${name}"`);
-		}
-		await Bun.remove(contextPath);
-		if (state.previous === name) {
-			const next = { ...state };
-			delete next.previous;
-			await saveState(this.statePath, next);
-		}
-		console.log(`Context "${colors.red(name)}" deleted`);
-	}
-
-	public async renameContext(oldName: string, newName: string): Promise<void> {
-		this.validateContextName(newName);
-		const contexts = await this.listContexts();
-		if (!contexts.includes(oldName)) {
-			throw new Error(`error: no context exists with the name "${oldName}"`);
-		}
-		if (contexts.includes(newName)) {
-			throw new Error(`error: context "${newName}" already exists`);
-		}
-		const oldPath = this.contextPath(oldName);
-		const newPath = this.contextPath(newName);
-		await Bun.rename(oldPath, newPath);
-		const state = await loadState(this.statePath);
-		let updated = false;
-		const next: typeof state = { ...state };
-		if (next.current === oldName) {
-			next.current = newName;
-			updated = true;
-		}
-		if (next.previous === oldName) {
-			next.previous = newName;
-			updated = true;
-		}
-		if (updated) {
-			await saveState(this.statePath, next);
-		}
-		console.log(
-			`Context "${oldName}" renamed to "${colors.bold(colors.green(newName))}"`,
-		);
-	}
-
-	public async showContext(name: string): Promise<void> {
-		const contextPath = this.contextPath(name);
-		if (!existsSync(contextPath)) {
-			throw new Error(`error: no context exists with the name "${name}"`);
-		}
-		const json = await readJson<Record<string, unknown>>(contextPath);
-		console.log(JSON.stringify(json, null, 2));
-	}
-
-	public async editContext(name: string): Promise<void> {
-		const contextPath = this.contextPath(name);
-		if (!existsSync(contextPath)) {
-			throw new Error(`error: no context exists with the name "${name}"`);
-		}
-		const editor = process.env.EDITOR || process.env.VISUAL || "vi";
-		const status = spawnSync(editor, [contextPath], { stdio: "inherit" });
-		if (status.status !== 0) {
-			throw new Error("error: editor exited with non-zero status");
-		}
-	}
-
-	public async exportContext(name: string): Promise<void> {
-		const contextPath = this.contextPath(name);
-		if (!existsSync(contextPath)) {
-			throw new Error(`error: no context exists with the name "${name}"`);
-		}
-		const content = await Bun.file(contextPath).text();
-		process.stdout.write(content);
-	}
-
-	public async importContext(name: string): Promise<void> {
-		const input = await new Response(process.stdin).text();
-		await this.importContextFromString(name, input);
-	}
-
-	public async importContextFromString(
-		name: string,
-		input: string,
-	): Promise<void> {
-		this.validateContextName(name);
-		const contexts = await this.listContexts();
-		if (contexts.includes(name)) {
-			throw new Error(`error: context "${name}" already exists`);
-		}
-		try {
-			JSON.parse(input);
-		} catch {
-			throw new Error("error: invalid JSON input");
-		}
-		await Bun.write(this.contextPath(name), input);
-		console.log(`Context "${colors.bold(colors.green(name))}" imported`);
-	}
-
-	public async unsetContext(): Promise<void> {
-		if (existsSync(this.settingsPath)) {
-			await Bun.remove(this.settingsPath);
-		}
-		const state = await loadState(this.statePath);
-		const { state: next } = unsetCurrent(state);
-		await saveState(this.statePath, next);
-		console.log("Unset current context");
-	}
-
-	public async listContextsWithCurrent(quiet: boolean): Promise<void> {
-		const contexts = await this.listContexts();
-		const current = await this.getCurrentContext();
-		if (quiet) {
-			if (current) {
-				console.log(current);
-			}
-			return;
-		}
-		if (this.settingsLevel === "user") {
-			if (hasProjectContexts()) {
-				console.log(
-					`💡 Project contexts available: run 'ccst --in-project' to manage`,
-				);
-			}
-			if (hasLocalContexts()) {
-				console.log(
-					`💡 Local contexts available: run 'ccst --local' to manage`,
-				);
-			}
-		}
-		if (contexts.length === 0) {
-			const label =
-				this.settingsLevel === "user"
-					? "👤 User"
-					: this.settingsLevel === "project"
-						? "📁 Project"
-						: "💻 Local";
-			console.log(
-				`${label} contexts: No contexts found. Create one with: ccst -n <name>`,
-			);
-			return;
-		}
-		const label =
-			this.settingsLevel === "user"
-				? "👤 User"
-				: this.settingsLevel === "project"
-					? "📁 Project"
-					: "💻 Local";
-		console.log(`${colors.bold(colors.cyan(label))} contexts:`);
-		for (const ctx of contexts) {
-			if (ctx === current) {
-				console.log(
-					`  ${colors.bold(colors.green(ctx))} ${colors.dim("(current)")}`,
-				);
-			} else {
-				console.log(`  ${ctx}`);
-			}
-		}
-	}
-
-	public async interactiveSelect(): Promise<void> {
-		const { selectContext } = await import("../utils/interactive.js");
-		const contexts = await this.listContexts();
-		if (contexts.length === 0) {
-			console.log("No contexts found");
-			return;
-		}
-		const current = await this.getCurrentContext();
-		const selected = await selectContext(contexts, current);
-		if (!selected || selected === current) {
-			return;
-		}
-		await this.switchContext(selected);
-	}
-
-	public async interactiveDelete(): Promise<void> {
-		const { selectContext } = await import("../utils/interactive.js");
-		const contexts = await this.listContexts();
-		if (contexts.length === 0) {
-			console.log("No contexts found");
-			return;
-		}
-		const current = await this.getCurrentContext();
-		const selected = await selectContext(contexts, current);
-		if (!selected) {
-			return;
-		}
-		await this.deleteContext(selected);
-	}
-
-	public async interactiveRename(): Promise<void> {
-		const { selectContext, promptInput } = await import(
-			"../utils/interactive.js"
-		);
-		const contexts = await this.listContexts();
-		if (contexts.length === 0) {
-			console.log("No contexts found");
-			return;
-		}
-		const current = await this.getCurrentContext();
-		const selected = await selectContext(contexts, current);
-		if (!selected) {
-			return;
-		}
-		const newName = await promptInput("New name");
-		if (!newName) {
-			return;
-		}
-		await this.renameContext(selected, newName);
-	}
-
-	public async interactiveCreateContext(): Promise<void> {
-		const { promptInput } = await import("../utils/interactive.js");
-		const name = await promptInput("Context name");
-		if (!name) {
-			return;
-		}
-		await this.createContext(name);
 	}
 
 	public async mergeFrom(
@@ -476,17 +197,5 @@ export class ContextManager {
 		const history = await loadHistory(this.contextsDir, contextName);
 		history.push(entry);
 		await saveHistory(this.contextsDir, contextName, history);
-	}
-
-	private validateContextName(name: string): void {
-		if (
-			!name ||
-			name === "-" ||
-			name === "." ||
-			name === ".." ||
-			name.includes("/")
-		) {
-			throw new Error(`error: invalid context name "${name}"`);
-		}
 	}
 }

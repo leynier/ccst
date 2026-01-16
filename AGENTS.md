@@ -21,7 +21,7 @@ bun run validate
 bun test
 
 # Run a single test file
-bun test src/core/context-manager.test.ts
+bun test src/core/merge-manager.test.ts
 
 # Run CLI locally during development
 bun src/index.ts [args]
@@ -29,12 +29,12 @@ bun src/index.ts [args]
 
 ## Architecture Overview
 
-**ccst** (Claude Code Switch Tools) is a CLI tool that manages Claude Code IDE contexts and configurations. It allows users to switch between different permission sets, environments, and settings at user, project, and local levels.
+**ccst** (Claude Code Switch Tools) is a CLI tool that provides utilities for managing Claude Code configurations, including permission merging, CCS daemon management, and configuration backup/restore.
 
 ### Core Components
 
 - **`src/index.ts`** - Main CLI entry point using Commander.js. Defines all commands and routes to handlers.
-- **`src/core/context-manager.ts`** - Central class for all context operations (CRUD, switching, merging). All operations flow through this class.
+- **`src/core/context-manager.ts`** - Central class for merge operations. Handles permission merging with context resolution.
 - **`src/core/merge-manager.ts`** - Handles permission merging with history tracking and smart deduplication.
 - **`src/utils/daemon.ts`** - Cross-platform daemon process management (Windows/Unix). Critical for CCS daemon commands.
 - **`src/utils/paths.ts`** - Resolves paths for all three settings levels (user/project/local).
@@ -53,7 +53,7 @@ Commands in `src/commands/` are organized by function:
 
 - `ccs/` - CCS daemon management (start, stop, status, logs, setup, install)
 - `config/` - Configuration backup/restore (dump, load)
-- `import-profiles/` - Profile importers (ccs, configs)
+- `merge.ts` - Permission merging operations
 
 ## Development Guidelines
 
