@@ -1,15 +1,13 @@
 # ccst - Claude Code Switch Tools
 
-> Tools for managing Claude Code settings and CCS daemon
+> Tools for managing CCS daemon and configuration
 
-**ccst** (Claude Code Switch Tools) provides utilities for managing Claude Code configurations, including permission merging, CCS daemon management, and configuration backup/restore.
+**ccst** (Claude Code Switch Tools) provides utilities for CCS daemon management and configuration backup/restore.
 
 ## Features
 
-- Permission merging with history tracking
 - CCS daemon management
 - Configuration backup and restore
-- Settings level management (user/project/local)
 - Shell completions for major shells
 
 ## Quick Start
@@ -33,55 +31,6 @@ pnpm add -g @leynier/ccst
 
 # yarn
 yarn global add @leynier/ccst
-```
-
-## Usage
-
-### Merge Permissions
-
-Merge permissions from other contexts or files to build complex configurations:
-
-```bash
-# Merge user settings into current context
-ccst --merge-from user
-
-# Merge from another context
-ccst --merge-from personal work
-
-# Merge from a specific file
-ccst --merge-from /path/to/permissions.json staging
-
-# Merge full settings (not just permissions)
-ccst --merge-from user --merge-full
-
-# Remove previously merged permissions
-ccst --unmerge user
-
-# View merge history
-ccst --merge-history
-
-# Merge into a specific context (default is current)
-ccst --merge-from user production
-```
-
-Merge features:
-
-- Smart deduplication
-- History tracking
-- Reversible unmerge
-- Targeted merges
-
-### Settings Level Management
-
-ccst respects Claude Code's settings hierarchy with explicit flags:
-
-```bash
-# Default: always uses user-level contexts
-ccst --merge-from user              # Manages ~/.claude/settings.json
-
-# Explicit flags for project/local contexts
-ccst --in-project --merge-from user # Manages ./.claude/settings.json
-ccst --local --merge-from user      # Manages ./.claude/settings.local.json
 ```
 
 ## CCS Daemon Management
@@ -171,30 +120,6 @@ ccst config load -y
 
 ## File Structure
 
-User level (`~/.claude/`):
-
-```text
-~/.claude/
-├── settings.json           # Active user context
-└── settings/
-    ├── work.json           # Work context
-    ├── personal.json       # Personal context
-    └── .cctx-state.json    # State tracking
-```
-
-Project level (`./.claude/`):
-
-```text
-./.claude/
-├── settings.json           # Shared project context
-├── settings.local.json     # Local project context (gitignored)
-└── settings/
-    ├── staging.json        # Staging context
-    ├── production.json     # Production context
-    ├── .cctx-state.json    # Project state
-    └── .cctx-state.local.json # Local state
-```
-
 CCS daemon files (`~/.ccs/`):
 
 ```text
@@ -205,21 +130,6 @@ CCS daemon files (`~/.ccs/`):
 ```
 
 ## Complete Command Reference
-
-### Merge Operations
-
-- `ccst --merge-from <source> [target]` - Merge permissions from source into target (default: current)
-  - Source can be: `user`, another context name, or file path
-- `ccst --merge-from <source> --merge-full [target]` - Merge ALL settings (not just permissions)
-- `ccst --unmerge <source> [target]` - Remove previously merged permissions
-- `ccst --unmerge <source> --merge-full [target]` - Remove ALL previously merged settings
-- `ccst --merge-history [name]` - Show merge history for context
-
-### Settings Levels
-
-- `ccst` - User-level contexts (default: `~/.claude/settings.json`)
-- `ccst --in-project` - Project-level contexts (`./.claude/settings.json`)
-- `ccst --local` - Local project contexts (`./.claude/settings.local.json`)
 
 ### CCS Daemon Commands
 
@@ -272,4 +182,4 @@ ccst --completions powershell > ccst.ps1
 
 ## Note
 
-Profile switching functionality has been removed from ccst as it is now natively supported by CCS. This tool now focuses on permission merging, daemon management, and configuration backup/restore operations.
+This tool has been simplified to focus exclusively on CCS daemon management and configuration backup/restore. Profile switching and permission merging features have been removed as they are now natively supported by CCS.

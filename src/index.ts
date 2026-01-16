@@ -10,14 +10,6 @@ import { ccsStopCommand } from "./commands/ccs/stop.js";
 import { completionsCommand } from "./commands/completions.js";
 import { configDumpCommand } from "./commands/config/dump.js";
 import { configLoadCommand } from "./commands/config/load.js";
-import {
-	mergeCommand,
-	mergeHistoryCommand,
-	unmergeCommand,
-} from "./commands/merge.js";
-import { ContextManager } from "./core/context-manager.js";
-import { resolveSettingsLevel } from "./core/settings-level.js";
-import { getPaths } from "./utils/paths.js";
 
 export const program = new Command();
 
@@ -26,48 +18,15 @@ const main = async (): Promise<void> => {
 		.name("ccst")
 		.description("Claude Code Switch Tools")
 		.version(pkg.version)
-		.argument("[context]", "context name for merge operations")
 		.option("--completions <shell>", "generate completions")
-		.option("--in-project", "use project settings level")
-		.option("--local", "use local settings level")
-		.option("--merge-from <source>", "merge permissions from source")
-		.option("--unmerge <source>", "remove permissions merged from source")
-		.option("--merge-history", "show merge history")
-		.option("--merge-full", "merge full settings")
 		.allowExcessArguments(false)
-		.action(
-			async (context: string | undefined, options: Record<string, unknown>) => {
-				if (options.completions) {
-					completionsCommand(options.completions as string);
-					return;
-				}
-				const level = resolveSettingsLevel(options);
-				const manager = new ContextManager(getPaths(level));
-				if (options.mergeFrom) {
-					await mergeCommand(
-						manager,
-						options.mergeFrom as string,
-						context,
-						options.mergeFull as boolean,
-					);
-					return;
-				}
-				if (options.unmerge) {
-					await unmergeCommand(
-						manager,
-						options.unmerge as string,
-						context,
-						options.mergeFull as boolean,
-					);
-					return;
-				}
-				if (options.mergeHistory) {
-					await mergeHistoryCommand(manager, context);
-					return;
-				}
-				program.help();
-			},
-		);
+		.action(async (_options: Record<string, unknown>) => {
+			if (_options.completions) {
+				completionsCommand(_options.completions as string);
+				return;
+			}
+			program.help();
+		});
 	const configCommandGroup = program
 		.command("config")
 		.description("CCS config backup/restore");
