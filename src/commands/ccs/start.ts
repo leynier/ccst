@@ -17,17 +17,11 @@ import {
 	writePid,
 	writePorts,
 } from "../../utils/daemon.js";
-import {
-	getRunningWatcherPid,
-	startWatcher,
-	stopWatcher,
-} from "../../utils/watcher-daemon.js";
 
 export type StartOptions = {
 	force?: boolean;
 	keepLogs?: boolean;
 	port?: number;
-	noWatch?: boolean;
 	timeout?: number;
 };
 
@@ -47,11 +41,6 @@ export const ccsStartCommand = async (
 	if (existingPid !== null && options?.force) {
 		console.log(pc.dim(`Stopping existing daemon (PID: ${existingPid})...`));
 		await killProcessTree(existingPid, true);
-		// Also stop watcher if running
-		const watcherPid = await getRunningWatcherPid();
-		if (watcherPid !== null) {
-			await stopWatcher(true);
-		}
 		// Wait for process to terminate
 		const maxWait = 3000;
 		const startTime = Date.now();
@@ -158,16 +147,6 @@ export const ccsStartCommand = async (
 	console.log(pc.green(`CCS config daemon started (PID: ${pid})`));
 	console.log(pc.dim(`Logs: ${logPath}`));
 
-	// Start file watcher unless --no-watch is specified
-	if (!options?.noWatch) {
-		const watcherPid = await startWatcher();
-		if (watcherPid) {
-			console.log(pc.dim(`File watcher started (PID: ${watcherPid})`));
-		} else {
-			console.log(pc.yellow("Warning: Failed to start file watcher"));
-		}
-	}
-
-	console.log(pc.dim("Run 'ccst ccs status' to check status"));
-	console.log(pc.dim("Run 'ccst ccs logs' to view logs"));
+	console.log(pc.dim("Run 'ccst status' to check status"));
+	console.log(pc.dim("Run 'ccst logs' to view logs"));
 };

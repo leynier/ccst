@@ -6,47 +6,32 @@ export const completionsCommand = (shell: string | undefined): void => {
 	if (!available.includes(shell)) {
 		throw new Error(`error: unsupported shell ${shell}`);
 	}
-	const options = [
-		"-d",
-		"--delete",
-		"-c",
-		"--current",
-		"-r",
-		"--rename",
-		"-n",
-		"--new",
-		"-e",
-		"--edit",
-		"-s",
-		"--show",
-		"--export",
-		"--import",
-		"-u",
-		"--unset",
-		"--completions",
-		"-q",
-		"--quiet",
-		"--in-project",
-		"--local",
-		"--merge-from",
-		"--unmerge",
-		"--merge-history",
-		"--merge-full",
+	const commands = [
+		"install",
+		"setup",
+		"start",
+		"stop",
+		"status",
+		"logs",
+		"config",
 	].join(" ");
+	const options = ["--completions", "--help", "--version"].join(" ");
+	const allCompletions = `${commands} ${options}`;
+
 	if (shell === "bash") {
 		process.stdout.write(
-			`# ccst bash completions\ncomplete -W "${options}" ccst\n`,
+			`# ccst bash completions\ncomplete -W "${allCompletions}" ccst\n`,
 		);
 		return;
 	}
 	if (shell === "zsh") {
 		process.stdout.write(
-			`#compdef ccst\n_arguments '*::options:(${options})'\n`,
+			`#compdef ccst\n_arguments '*::options:(${allCompletions})'\n`,
 		);
 		return;
 	}
 	if (shell === "fish") {
-		process.stdout.write(`complete -c ccst -f -a "${options}"\n`);
+		process.stdout.write(`complete -c ccst -f -a "${allCompletions}"\n`);
 		return;
 	}
 	process.stdout.write(

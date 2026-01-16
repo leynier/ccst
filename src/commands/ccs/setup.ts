@@ -12,7 +12,7 @@ export const ccsSetupCommand = async (
 	const which = spawnSync("which", ["ccs"], { stdio: "ignore" });
 	if (which.status !== 0) {
 		console.log(pc.red("Error: ccs command not found"));
-		console.log(pc.dim("Run 'ccst ccs install' to install it"));
+		console.log(pc.dim("Run 'ccst install' to install it"));
 		return;
 	}
 

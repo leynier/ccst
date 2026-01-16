@@ -5,10 +5,6 @@ import {
 	getPidPath,
 	getRunningDaemonPid,
 } from "../../utils/daemon.js";
-import {
-	getRunningWatcherPid,
-	getWatcherLogPath,
-} from "../../utils/watcher-daemon.js";
 
 export const ccsStatusCommand = async (): Promise<void> => {
 	// Show daemon status
@@ -41,20 +37,5 @@ export const ccsStatusCommand = async (): Promise<void> => {
 				// ps command not available or failed
 			}
 		}
-	}
-
-	// Show watcher status
-	console.log();
-	const watcherPid = await getRunningWatcherPid();
-	if (watcherPid !== null) {
-		console.log(pc.green(`File watcher is running (PID: ${watcherPid})`));
-		const watcherLogPath = getWatcherLogPath();
-		if (existsSync(watcherLogPath)) {
-			const stats = statSync(watcherLogPath);
-			const sizeKb = (stats.size / 1024).toFixed(2);
-			console.log(pc.dim(`Watcher log: ${watcherLogPath} (${sizeKb} KB)`));
-		}
-	} else {
-		console.log(pc.yellow("File watcher is not running"));
 	}
 };
