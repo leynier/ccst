@@ -84,7 +84,11 @@ export const getRelativePath = (absolutePath: string): string => {
 // Ensure directory exists for a file path (cross-platform)
 export const ensureDirectoryExists = (filePath: string): void => {
 	const dir = dirname(filePath);
-	if (dir && dir !== "." && !existsSync(dir)) {
+	// Skip if directory is current directory or already exists
+	if (!dir || dir === "." || dir === filePath) {
+		return;
+	}
+	if (!existsSync(dir)) {
 		mkdirSync(dir, { recursive: true });
 	}
 };

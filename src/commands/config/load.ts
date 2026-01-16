@@ -1,5 +1,5 @@
 import { existsSync, unlinkSync } from "node:fs";
-import { join, resolve } from "node:path";
+import path, { join, normalize, resolve } from "node:path";
 import JSZip from "jszip";
 import pc from "picocolors";
 import {
@@ -98,11 +98,15 @@ export const configLoadCommand = async (
 	// Extract files
 	let extractedCount = 0;
 	for (const relativePath of fileEntries) {
-		// Handle both forward and back slashes for cross-platform compatibility
-		const pathParts = relativePath.split(/[/\\]/);
-		const absolutePath = join(ccsHome, ...pathParts);
+		// Normalize path: zip files always use forward slashes
+		// Convert to platform-specific separators for Windows compatibility
+		const normalizedPath = relativePath.replace(/\//g, path.sep);
+		const absolutePath = join(ccsHome, normalizedPath);
 		// Validate path is within ccsHome (prevent path traversal attacks)
-		if (!absolutePath.startsWith(ccsHome)) {
+		// Normalize both paths for consistent comparison on Windows
+		const normalizedAbsolute = normalize(absolutePath);
+		const normalizedCcsHome = normalize(ccsHome);
+		if (!normalizedAbsolute.startsWith(normalizedCcsHome)) {
 			console.warn(pc.yellow(`Skipping suspicious path: ${relativePath}`));
 			continue;
 		}
@@ -111,8 +115,8 @@ export const configLoadCommand = async (
 			continue;
 		}
 		const fileData = await zipFile.async("uint8array");
-		ensureDirectoryExists(absolutePath);
-		await Bun.write(absolutePath, fileData);
+		ensureDirectoryExists(normalizedAbsolute);
+		await Bun.write(normalizedAbsolute, fileData);
 		extractedCount++;
 	}
 	console.log(pc.green(`Imported ${extractedCount} files from ${input}`));
