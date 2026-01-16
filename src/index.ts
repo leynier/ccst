@@ -16,7 +16,7 @@ export const program = new Command();
 const main = async (): Promise<void> => {
 	program
 		.name("ccst")
-		.description("Claude Code Switch Tools")
+		.description("Claude Code Switch Tools - CCS daemon and config management")
 		.version(pkg.version)
 		.option("--completions <shell>", "generate completions")
 		.allowExcessArguments(false)
@@ -27,31 +27,25 @@ const main = async (): Promise<void> => {
 			}
 			program.help();
 		});
-	const configCommandGroup = program
-		.command("config")
-		.description("CCS config backup/restore");
-	configCommandGroup
-		.command("dump")
-		.description("export CCS config to zip")
-		.argument("[output]", "output path", "ccs-config.zip")
-		.action(async (output) => {
-			await configDumpCommand(output);
+
+	program
+		.command("install")
+		.description("Install CCS CLI tool")
+		.action(async () => {
+			await ccsInstallCommand();
 		});
-	configCommandGroup
-		.command("load")
-		.description("import CCS config from zip")
-		.argument("[input]", "input path", "ccs-config.zip")
-		.option("-r, --replace", "replace all existing files")
-		.option("-y, --yes", "skip confirmation prompt")
-		.action(async (input, options) => {
-			await configLoadCommand(input, options);
+
+	program
+		.command("setup")
+		.description("Run CCS initial setup")
+		.option("-f, --force", "Force setup even if already configured")
+		.action(async (options) => {
+			await ccsSetupCommand(options);
 		});
-	const ccsCommandGroup = program
-		.command("ccs")
-		.description("CCS daemon management");
-	ccsCommandGroup
+
+	program
 		.command("start")
-		.description("Start CCS config as background daemon")
+		.description("Start CCS daemon")
 		.option("-f, --force", "Force restart if already running")
 		.option("--keep-logs", "Keep existing log file (append)")
 		.option(
@@ -73,22 +67,25 @@ const main = async (): Promise<void> => {
 				timeout: Number.parseInt(options.timeout, 10) * 1000,
 			});
 		});
-	ccsCommandGroup
+
+	program
 		.command("stop")
-		.description("Stop the CCS config daemon")
+		.description("Stop CCS daemon")
 		.option("-f, --force", "Force kill (SIGKILL)")
 		.action(async (options) => {
 			await ccsStopCommand(options);
 		});
-	ccsCommandGroup
+
+	program
 		.command("status")
-		.description("Check CCS config daemon status")
+		.description("Check CCS daemon status")
 		.action(async () => {
 			await ccsStatusCommand();
 		});
-	ccsCommandGroup
+
+	program
 		.command("logs")
-		.description("View CCS config daemon logs")
+		.description("View CCS daemon logs")
 		.option("-f, --follow", "Follow log output")
 		.option("-n, --lines <number>", "Number of lines", "50")
 		.action(async (options) => {
@@ -97,19 +94,29 @@ const main = async (): Promise<void> => {
 				lines: parseInt(options.lines, 10),
 			});
 		});
-	ccsCommandGroup
-		.command("setup")
-		.description("Run CCS initial setup")
-		.option("-f, --force", "Force setup even if already configured")
-		.action(async (options) => {
-			await ccsSetupCommand(options);
+
+	const configCommandGroup = program
+		.command("config")
+		.description("CCS config backup/restore");
+
+	configCommandGroup
+		.command("dump")
+		.description("export CCS config to zip")
+		.argument("[output]", "output path", "ccs-config.zip")
+		.action(async (output) => {
+			await configDumpCommand(output);
 		});
-	ccsCommandGroup
-		.command("install")
-		.description("Install CCS CLI tool")
-		.action(async () => {
-			await ccsInstallCommand();
+
+	configCommandGroup
+		.command("load")
+		.description("import CCS config from zip")
+		.argument("[input]", "input path", "ccs-config.zip")
+		.option("-r, --replace", "replace all existing files")
+		.option("-y, --yes", "skip confirmation prompt")
+		.action(async (input, options) => {
+			await configLoadCommand(input, options);
 		});
+
 	try {
 		await program.parseAsync(process.argv);
 	} catch {

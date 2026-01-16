@@ -35,63 +35,61 @@ yarn global add @leynier/ccst
 
 ## CCS Daemon Management
 
-ccst can manage the CCS (Claude Code Server) daemon for background processing:
-
 ### Installation & Setup
 
 ```bash
 # Install CCS CLI tool (interactive package manager selection)
-ccst ccs install
+ccst install
 
 # Run initial setup
-ccst ccs setup
+ccst setup
 
 # Force setup even if already configured
-ccst ccs setup -f
+ccst setup -f
 ```
 
 ### Starting & Stopping
 
 ```bash
 # Start daemon
-ccst ccs start
+ccst start
 
 # Start with specific dashboard port
-ccst ccs start -p 3001
+ccst start -p 3001
 
 # Skip file watcher
-ccst ccs start -W
+ccst start -W
 
 # Set startup timeout (Windows only, default: 30 seconds)
-ccst ccs start -t 60
+ccst start -t 60
 
 # Force restart if already running
-ccst ccs start -f
+ccst start -f
 
 # Keep existing logs (append instead of truncate)
-ccst ccs start --keep-logs
+ccst start --keep-logs
 
 # Stop daemon
-ccst ccs stop
+ccst stop
 
 # Force kill daemon
-ccst ccs stop -f
+ccst stop -f
 ```
 
 ### Monitoring
 
 ```bash
 # Check daemon status
-ccst ccs status
+ccst status
 
 # View logs (last 50 lines by default)
-ccst ccs logs
+ccst logs
 
 # View more lines
-ccst ccs logs -n 100
+ccst logs -n 100
 
 # Follow logs in real-time
-ccst ccs logs -f
+ccst logs -f
 ```
 
 ## Configuration Backup
@@ -131,23 +129,23 @@ CCS daemon files (`~/.ccs/`):
 
 ## Complete Command Reference
 
-### CCS Daemon Commands
+### Daemon Commands
 
-- `ccst ccs install` - Install CCS CLI tool (interactive package manager selection)
-- `ccst ccs setup` - Run CCS initial setup
-- `ccst ccs setup -f` - Force setup even if already configured
-- `ccst ccs start` - Start CCS daemon
-- `ccst ccs start -f` - Force restart if already running
-- `ccst ccs start -p <port>` - Start with specific dashboard port
-- `ccst ccs start -W` - Start without file watcher
-- `ccst ccs start -t <seconds>` - Set startup timeout (Windows only)
-- `ccst ccs start --keep-logs` - Keep existing logs (append instead of truncate)
-- `ccst ccs stop` - Stop CCS daemon
-- `ccst ccs stop -f` - Force kill daemon (SIGKILL)
-- `ccst ccs status` - Show daemon status, PID, and log info
-- `ccst ccs logs` - View daemon logs (last 50 lines)
-- `ccst ccs logs -n <lines>` - View specified number of lines
-- `ccst ccs logs -f` - Follow log output in real-time
+- `ccst install` - Install CCS CLI tool (interactive package manager selection)
+- `ccst setup` - Run CCS initial setup
+- `ccst setup -f` - Force setup even if already configured
+- `ccst start` - Start CCS daemon
+- `ccst start -f` - Force restart if already running
+- `ccst start -p <port>` - Start with specific dashboard port
+- `ccst start -W` - Start without file watcher
+- `ccst start -t <seconds>` - Set startup timeout (Windows only)
+- `ccst start --keep-logs` - Keep existing logs (append instead of truncate)
+- `ccst stop` - Stop CCS daemon
+- `ccst stop -f` - Force kill daemon (SIGKILL)
+- `ccst status` - Show daemon status, PID, and log info
+- `ccst logs` - View daemon logs (last 50 lines)
+- `ccst logs -n <lines>` - View specified number of lines
+- `ccst logs -f` - Follow log output in real-time
 
 ### Configuration Commands
 
