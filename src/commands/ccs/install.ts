@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
+import * as readline from "node:readline";
 import pc from "picocolors";
-import { promptInput } from "../../utils/interactive.js";
 
 type PackageManager = {
 	name: string;
@@ -35,6 +35,20 @@ const packageManagers: PackageManager[] = [
 		args: ["global", "add", "@kaitranntt/ccs"],
 	},
 ];
+
+const promptInput = async (prompt: string): Promise<string> => {
+	const rl = readline.createInterface({
+		input: process.stdin,
+		output: process.stdout,
+	});
+
+	return new Promise((resolve) => {
+		rl.question(`${prompt}: `, (answer) => {
+			rl.close();
+			resolve(answer);
+		});
+	});
+};
 
 const selectPackageManager = async (): Promise<PackageManager | undefined> => {
 	const lines = packageManagers.map(
@@ -131,6 +145,6 @@ export const ccsInstallCommand = async (): Promise<void> => {
 			);
 		}
 	} else {
-		console.log(pc.dim("You can run 'ccst ccs setup' later to configure ccs"));
+		console.log(pc.dim("You can run 'ccst setup' later to configure ccs"));
 	}
 };
