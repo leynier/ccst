@@ -57,9 +57,6 @@ ccst start
 # Start with specific dashboard port
 ccst start -p 3001
 
-# Skip file watcher
-ccst start -W
-
 # Set startup timeout (Windows only, default: 30 seconds)
 ccst start -t 60
 
@@ -137,7 +134,6 @@ CCS daemon files (`~/.ccs/`):
 - `ccst start` - Start CCS daemon
 - `ccst start -f` - Force restart if already running
 - `ccst start -p <port>` - Start with specific dashboard port
-- `ccst start -W` - Start without file watcher
 - `ccst start -t <seconds>` - Set startup timeout (Windows only)
 - `ccst start --keep-logs` - Keep existing logs (append instead of truncate)
 - `ccst stop` - Stop CCS daemon
