@@ -55,7 +55,7 @@ const main = async (): Promise<void> => {
 		.option(
 			"-t, --timeout <seconds>",
 			"Timeout in seconds for daemon startup (Windows only)",
-			"30",
+			"150",
 		)
 		.action(async (options) => {
 			await ccsStartCommand({
